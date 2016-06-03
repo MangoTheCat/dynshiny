@@ -24,9 +24,12 @@ server <- function(input, output) {
     buttons = list()
   )
 
+  buttons <- list()
+
   create_button <- function(id, label) {
 
-    rvs$buttons[[id]] <- wellPanel(
+    rvs$buttons[[id]] <- id
+    buttons[[id]] <<- wellPanel(
       textInput(
         paste0("input-", id),
         label = label
@@ -47,7 +50,10 @@ server <- function(input, output) {
 
       observeEvent(
         input[[paste0("del_button", id2)]],
-        { rvs$buttons[[id2]] <- NULL }
+        {
+          rvs$buttons[[id2]] <- NULL
+          buttons[[id2]] <<- NULL
+        }
       )
     })
   }
@@ -56,6 +62,7 @@ server <- function(input, output) {
     input$inputFile,
     {
       rvs$buttons <- list()
+      buttons <<- list()
       btn <- readLines(input$inputFile)
       for (str in btn) {
         create_button(str, str)
@@ -71,7 +78,8 @@ server <- function(input, output) {
   )
 
   output$more_buttons <- renderUI({
-    do.call(fluidRow, unname(rvs$buttons))
+    rvs$buttons
+    do.call(fluidRow, unname(buttons))
   })
 
 }
