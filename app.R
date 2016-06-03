@@ -21,15 +21,17 @@ random_id <- function() {
 server <- function(input, output, session) {
 
   data <- list()
+  delete <- reactiveValues(notify = 0)
 
   updateDB <- reactive({
     d <- read.table(input$inputFile, stringsAsFactors = FALSE)
-    data <<- structure(as.list(d[,2]), names = d[,1])
+    n <- vapply(seq_len(nrow(d)), function(x) random_id(), "")
+    data <<- structure(as.list(d[,2]), names = n)
   })
 
   create_button <- function(id, label, value) {
 
-    w <- wellPanel(
+    w <- div(wellPanel(
       textInput(
         paste0("input-", id),
         label = label,
@@ -40,7 +42,7 @@ server <- function(input, output, session) {
         inputId = paste0("del_button", id),
         label = paste0("Delete")
       )
-    )
+    ))
 
     local({
       id2 <- id
@@ -59,6 +61,7 @@ server <- function(input, output, session) {
         input[[paste0("del_button", id2)]],
         {
           data[[id2]] <<- NULL
+          delete$notify <- isolate(delete$notify) + 1
         }
       )
     })
@@ -70,15 +73,19 @@ server <- function(input, output, session) {
     if (input$add_button) data[[random_id()]] <<- "xxx"
   })
 
+  updateDelete <- reactive({
+    delete$notify
+  })
+
   output$more_buttons <- renderUI({
-    updateDB()
     updateAdd()
+    updateDB()
+    updateDelete()
     w <- lapply(seq_along(data), function(i) {
       create_button(names(data)[i], names(data)[i], data[[i]])
     })
     do.call(fluidRow, w)
   })
-
 }
 
 shinyApp(ui, server)
