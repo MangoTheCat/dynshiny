@@ -84,7 +84,7 @@ server <- function(input, output, session) {
     updateDB()
     updateDelete()
     w <- lapply(seq_along(data), function(i) {
-      create_button(names(data)[i], names(data)[i], data[[i]])
+      create_button(names(data)[i], "Description", data[[i]])
     })
     do.call(fluidRow, w)
   })
