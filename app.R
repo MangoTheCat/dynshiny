@@ -18,21 +18,22 @@ random_id <- function() {
   )
 }
 
-server <- function(input, output) {
+server <- function(input, output, session) {
 
-  rvs <- reactiveValues(
-    buttons = list()
-  )
+  data <- list()
 
-  buttons <- list()
+  updateDB <- reactive({
+    d <- read.table(input$inputFile, stringsAsFactors = FALSE)
+    data <<- structure(as.list(d[,2]), names = d[,1])
+  })
 
-  create_button <- function(id, label) {
+  create_button <- function(id, label, value) {
 
-    rvs$buttons[[id]] <- id
-    buttons[[id]] <<- wellPanel(
+    w <- wellPanel(
       textInput(
         paste0("input-", id),
-        label = label
+        label = label,
+        value = value
       ),
       actionButton(inputId = paste0("button", id), label = label),
       actionButton(
@@ -43,6 +44,12 @@ server <- function(input, output) {
 
     local({
       id2 <- id
+
+      observeEvent(
+        input[[paste0("input-", id2)]],
+        { data[[id]] <<- input[[paste0("input-", id2)]] }
+      )
+
       observeEvent(
         input[[paste0("button", id2)]],
         { print(id2) }
@@ -51,35 +58,25 @@ server <- function(input, output) {
       observeEvent(
         input[[paste0("del_button", id2)]],
         {
-          rvs$buttons[[id2]] <- NULL
-          buttons[[id2]] <<- NULL
+          data[[id2]] <<- NULL
         }
       )
     })
+
+    w
   }
 
-  observeEvent(
-    input$inputFile,
-    {
-      rvs$buttons <- list()
-      buttons <<- list()
-      btn <- readLines(input$inputFile)
-      for (str in btn) {
-        create_button(str, str)
-      }
-    }
-  )
-
-  observeEvent(
-    input$add_button,
-    {
-      create_button(random_id(), "xxx")
-    }
-  )
+  updateAdd <- reactive({
+    if (input$add_button) data[[random_id()]] <<- "xxx"
+  })
 
   output$more_buttons <- renderUI({
-    rvs$buttons
-    do.call(fluidRow, unname(buttons))
+    updateDB()
+    updateAdd()
+    w <- lapply(seq_along(data), function(i) {
+      create_button(names(data)[i], names(data)[i], data[[i]])
+    })
+    do.call(fluidRow, w)
   })
 
 }
