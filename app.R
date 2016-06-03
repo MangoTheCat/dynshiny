@@ -5,7 +5,7 @@ ui <- shinyUI(pageWithSidebar(
   headerPanel("Dynamic UI with database backend"),
   sidebarPanel(
     selectInput("inputFile", "File", choices = c("x.txt", "y.txt")),
-    actionButton(inputId = "add_button", label = "Add Button")
+    actionButton(inputId = "add_button", label = "Add")
   ),
   mainPanel(
     uiOutput("more_buttons")
@@ -41,7 +41,8 @@ server <- function(input, output, session) {
       actionButton(inputId = paste0("button", id), label = label),
       actionButton(
         inputId = paste0("del_button", id),
-        label = paste0("Delete")
+        label = paste0("Delete"),
+        class = "btn-danger"
       )
     ))
 
