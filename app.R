@@ -5,7 +5,8 @@ ui <- shinyUI(pageWithSidebar(
   headerPanel("Dynamic UI with database backend"),
   sidebarPanel(
     selectInput("inputFile", "File", choices = c("x.txt", "y.txt")),
-    actionButton(inputId = "add_button", label = "Add")
+    actionButton(inputId = "add_button", label = "Add"),
+    actionButton(inputId = "save_button", label = "Save", class = "btn-primary")
   ),
   mainPanel(
     uiOutput("more_buttons")
@@ -78,6 +79,11 @@ server <- function(input, output, session) {
   updateDelete <- reactive({
     delete$notify
   })
+
+  observeEvent(
+    input$save_button,
+    { writeLines(unlist(data), con = input$inputFile) }
+  )
 
   output$more_buttons <- renderUI({
     updateAdd()
