@@ -39,7 +39,6 @@ server <- function(input, output, session) {
         label = label,
         value = value
       ),
-      actionButton(inputId = paste0("button", id), label = label),
       actionButton(
         inputId = paste0("del_button", id),
         label = paste0("Delete"),
@@ -53,11 +52,6 @@ server <- function(input, output, session) {
       observeEvent(
         input[[paste0("input-", id2)]],
         { data[[id]] <<- input[[paste0("input-", id2)]] }
-      )
-
-      observeEvent(
-        input[[paste0("button", id2)]],
-        { print(id2) }
       )
 
       observeEvent(
