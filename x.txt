@@ -1,2 +1,2 @@
-foo
-bar
+X record 1
+X record 2

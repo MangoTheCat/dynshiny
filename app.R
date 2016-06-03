@@ -67,7 +67,7 @@ server <- function(input, output, session) {
   }
 
   updateAdd <- reactive({
-    if (input$add_button) data[[random_id()]] <<- "xxx"
+    if (input$add_button) data[[random_id()]] <<- ""
   })
 
   updateDelete <- reactive({
