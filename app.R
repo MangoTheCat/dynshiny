@@ -6,6 +6,7 @@ ui <- shinyUI(pageWithSidebar(
   sidebarPanel(
     selectInput("inputFile", "File", choices = c("x.txt", "y.txt")),
     actionButton(inputId = "add_button", label = "Add"),
+    actionButton(inputId = "cancel_button", label = "Cancel"),
     actionButton(inputId = "save_button", label = "Save", class = "btn-primary")
   ),
   mainPanel(
@@ -26,10 +27,14 @@ server <- function(input, output, session) {
   delete <- reactiveValues(notify = 0)
 
   updateDB <- reactive({
-    d <- readLines(input$inputFile)
+    load_db(input$inputFile)
+  })
+
+  load_db <- function(db) {
+    d <- readLines(db)
     n <- vapply(seq_along(d), function(x) random_id(), "")
     data <<- structure(as.list(d), names = n)
-  })
+  }
 
   create_button <- function(id, label, value) {
 
@@ -79,14 +84,22 @@ server <- function(input, output, session) {
     { writeLines(unlist(data), con = input$inputFile) }
   )
 
+  updateCancel <- reactive({
+    if (input$cancel_button) load_db(input$inputFile)
+  })
+
   output$more_buttons <- renderUI({
+
     updateAdd()
     updateDB()
     updateDelete()
+    updateCancel()
+
     w <- lapply(seq_along(data), function(i) {
       create_button(names(data)[i], "Description", data[[i]])
     })
     do.call(fluidRow, w)
+
   })
 }
 
