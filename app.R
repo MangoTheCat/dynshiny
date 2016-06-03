@@ -3,8 +3,7 @@ library(shiny)
 
 ui <- basicPage(
   fluidRow(
-    actionButton(inputId = "add_button", label = "Add Button"),
-    actionButton(inputId = "del_button", label = "Delete Button")
+    actionButton(inputId = "add_button", label = "Add Button")
   ),
   uiOutput("more_buttons")
 )
@@ -19,28 +18,28 @@ server <- function(input, output){
     input$add_button,
     {
       len <- length(rvs$buttons) + 1
-      rvs$buttons[[len]] <- actionButton(inputId = paste0("button",len),
-                                         label = len)
+      rvs$buttons[[len]] <- div(
+        actionButton(inputId = paste0("button", len), label = len),
+        actionButton(
+          inputId = paste0("del_button", len),
+          label = paste0("D", len)
+        )
+      )
     }
   )
 
-  observeEvent(
-    input$del_button,
-    {
-      len <- length(rvs$buttons)
-      rvs$buttons[[len]] <- NULL
-    }
-  )
-  
   output$more_buttons <- renderUI({
     do.call(fluidRow, rvs$buttons)
   })
 
-  for(ii in 1:10){
+  for (ii in 1:10){
     local({
       i <- ii
-      observeEvent(eventExpr = input[[paste0("button",i)]],
-                   handlerExpr = {print(i)})
+      observeEvent(input[[paste0("button", i)]], { print(i) })
+      observeEvent(
+        input[[paste0("del_button", i)]],
+        { rvs$buttons[[i]] <- NULL }
+      )
     })
 
   }
