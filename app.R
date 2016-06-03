@@ -8,6 +8,13 @@ ui <- basicPage(
   uiOutput("more_buttons")
 )
 
+random_id <- function() {
+  paste(
+    sample(c(0:9, letters, LETTERS), 8, replace = TRUE),
+    collapse = ""
+  )
+}
+
 server <- function(input, output){
 
   rvs <- reactiveValues(
@@ -17,27 +24,32 @@ server <- function(input, output){
   observeEvent(
     input$add_button,
     {
-      len <- length(rvs$buttons) + 1
-      rvs$buttons[[len]] <- div(
-        actionButton(inputId = paste0("button", len), label = len),
+      id <- random_id()
+      rvs$buttons[[id]] <- div(
+        actionButton(inputId = paste0("button", id), label = id),
         actionButton(
-          inputId = paste0("del_button", len),
-          label = paste0("D", len)
+          inputId = paste0("del_button", id),
+          label = paste0("Delete")
         )
       )
-      local({
-        i <- len
-        observeEvent(input[[paste0("button", i)]], { print(i) })
-        observeEvent(
-          input[[paste0("del_button", i)]],
-          { rvs$buttons[[i]] <- NULL }
-        )
-      })
+
+      observeEvent(
+        input[[paste0("button", id)]],
+        substitute({ print(id) }, list(id = id)),
+        handler.quoted = TRUE
+      )
+
+      observeEvent(
+        input[[paste0("del_button", id)]],
+        substitute({ rvs$buttons[[id]] <- NULL }, list(id = id)),
+        handler.quoted = TRUE
+      )
     }
   )
 
   output$more_buttons <- renderUI({
-    do.call(fluidRow, rvs$buttons)
+    print(rvs$buttons)
+    do.call(fluidRow, unname(rvs$buttons))
   })
 
 }
