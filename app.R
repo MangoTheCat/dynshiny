@@ -25,24 +25,20 @@ server <- function(input, output){
           label = paste0("D", len)
         )
       )
+      local({
+        i <- len
+        observeEvent(input[[paste0("button", i)]], { print(i) })
+        observeEvent(
+          input[[paste0("del_button", i)]],
+          { rvs$buttons[[i]] <- NULL }
+        )
+      })
     }
   )
 
   output$more_buttons <- renderUI({
     do.call(fluidRow, rvs$buttons)
   })
-
-  for (ii in 1:10){
-    local({
-      i <- ii
-      observeEvent(input[[paste0("button", i)]], { print(i) })
-      observeEvent(
-        input[[paste0("del_button", i)]],
-        { rvs$buttons[[i]] <- NULL }
-      )
-    })
-
-  }
 
 }
 
