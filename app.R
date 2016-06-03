@@ -18,15 +18,19 @@ random_id <- function() {
   )
 }
 
-server <- function(input, output){
+server <- function(input, output) {
 
   rvs <- reactiveValues(
     buttons = list()
   )
 
   create_button <- function(id, label) {
+
     rvs$buttons[[id]] <- wellPanel(
-      textInput(paste0("input-", id), label = label),
+      textInput(
+        paste0("input-", id),
+        label = label
+      ),
       actionButton(inputId = paste0("button", id), label = label),
       actionButton(
         inputId = paste0("del_button", id),
@@ -54,7 +58,7 @@ server <- function(input, output){
       rvs$buttons <- list()
       btn <- readLines(input$inputFile)
       for (str in btn) {
-        create_button(random_id(), str)
+        create_button(str, str)
       }
     }
   )
