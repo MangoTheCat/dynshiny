@@ -35,14 +35,12 @@ server <- function(input, output){
 
       observeEvent(
         input[[paste0("button", id)]],
-        substitute({ print(id) }, list(id = id)),
-        handler.quoted = TRUE
+        { print(id) }
       )
 
       observeEvent(
         input[[paste0("del_button", id)]],
-        substitute({ rvs$buttons[[id]] <- NULL }, list(id = id)),
-        handler.quoted = TRUE
+        { rvs$buttons[[id]] <- NULL }
       )
     }
   )
