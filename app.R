@@ -25,9 +25,9 @@ server <- function(input, output, session) {
   delete <- reactiveValues(notify = 0)
 
   updateDB <- reactive({
-    d <- read.table(input$inputFile, stringsAsFactors = FALSE)
-    n <- vapply(seq_len(nrow(d)), function(x) random_id(), "")
-    data <<- structure(as.list(d[,2]), names = n)
+    d <- readLines(input$inputFile)
+    n <- vapply(seq_along(d), function(x) random_id(), "")
+    data <<- structure(as.list(d), names = n)
   })
 
   create_button <- function(id, label, value) {
