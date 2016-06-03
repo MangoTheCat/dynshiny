@@ -23,6 +23,7 @@ random_id <- function() {
 
 server <- function(input, output, session) {
 
+  changed <- NULL
   data <- list()
   delete <- reactiveValues(notify = 0)
 
@@ -34,6 +35,13 @@ server <- function(input, output, session) {
     d <- readLines(db)
     n <- vapply(seq_along(d), function(x) random_id(), "")
     data <<- structure(as.list(d), names = n)
+
+    ## This is a trick. After the data is loaded, the input-{id}
+    ## reactives still fire, for setting the initial data in the
+    ## input fields. Every time this happens we add 1 to 'changed'
+    ## This way it will still be zero when the page is loaded and
+    ## nothing changed yet.
+    changed <<- - length(d)
   }
 
   create_button <- function(id, label, value) {
@@ -56,13 +64,17 @@ server <- function(input, output, session) {
 
       observeEvent(
         input[[paste0("input-", id2)]],
-        { data[[id]] <<- input[[paste0("input-", id2)]] }
+        {
+          data[[id]] <<- input[[paste0("input-", id2)]]
+          changed <<- changed + 1
+        }
       )
 
       observeEvent(
         input[[paste0("del_button", id2)]],
         {
           data[[id2]] <<- NULL
+          changed <<- TRUE
           delete$notify <- isolate(delete$notify) + 1
         }
       )
@@ -72,7 +84,10 @@ server <- function(input, output, session) {
   }
 
   updateAdd <- reactive({
-    if (input$add_button) data[[random_id()]] <<- ""
+    if (input$add_button) {
+      data[[random_id()]] <<- ""
+      changed <<- TRUE
+    }
   })
 
   updateDelete <- reactive({
@@ -81,7 +96,14 @@ server <- function(input, output, session) {
 
   observeEvent(
     input$save_button,
-    { writeLines(unlist(data), con = input$inputFile) }
+    {
+      if (!changed) {
+        message("Nothing to write")
+      } else {
+        writeLines(unlist(data), con = input$inputFile)
+        changed <<- FALSE
+      }
+    }
   )
 
   updateCancel <- reactive({
