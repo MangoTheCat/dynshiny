@@ -1,15 +1,16 @@
 
 library(shiny)
 
-ui <- basicPage(
-  fluidPage(
-    fluidRow(
-      selectInput("inputFile", "File", choices = c("x.txt", "y.txt")),
-      actionButton(inputId = "add_button", label = "Add Button")
-    ),
+ui <- shinyUI(pageWithSidebar(
+  headerPanel("Dynamic UI with database backend"),
+  sidebarPanel(
+    selectInput("inputFile", "File", choices = c("x.txt", "y.txt")),
+    actionButton(inputId = "add_button", label = "Add Button")
+  ),
+  mainPanel(
     uiOutput("more_buttons")
   )
-)
+))
 
 random_id <- function() {
   paste(
