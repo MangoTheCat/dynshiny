@@ -5,9 +5,7 @@ ui <- shinyUI(pageWithSidebar(
   headerPanel("Dynamic UI with database backend"),
   sidebarPanel(
     selectInput("inputFile", "File", choices = c("x.txt", "y.txt")),
-    actionButton(inputId = "add_button", label = "Add"),
-    actionButton(inputId = "cancel_button", label = "Cancel"),
-    actionButton(inputId = "save_button", label = "Save", class = "btn-primary")
+    uiOutput("buttons")
   ),
   mainPanel(
     uiOutput("more_buttons")
@@ -25,7 +23,19 @@ server <- function(input, output, session) {
 
   data <- list()
   dbdata <- list()
-  delete <- reactiveValues(notify = 0)
+  rvs <- reactiveValues(deleted = 0, changed = FALSE)
+
+  ## All buttons are dynamic, otherwise they wouldn't (easily)
+  ## be in the same row.
+  output$buttons <- renderUI({
+    div(
+      actionButton(inputId = "add_button", label = "Add"),
+      actionButton(inputId = "cancel_button", label = "Cancel"),
+      if (rvs$changed) {
+        actionButton(inputId = "save_button", label = "Save", class = "btn-primary")
+      }
+    )
+  })
 
   updateDB <- reactive({
     load_db(input$inputFile)
@@ -35,6 +45,11 @@ server <- function(input, output, session) {
     d <- readLines(db)
     n <- vapply(seq_along(d), function(x) random_id(), "")
     dbdata <<- data <<- structure(as.list(d), names = n)
+    rvs$changed <- FALSE
+  }
+
+  different_data <- function(d1, d2) {
+    !identical(unname(d1), unname(d2))
   }
 
   create_button <- function(id, label, value) {
@@ -59,6 +74,7 @@ server <- function(input, output, session) {
         input[[paste0("input-", id2)]],
         {
           data[[id]] <<- input[[paste0("input-", id2)]]
+          rvs$changed <- different_data(data, dbdata)
         }
       )
 
@@ -66,7 +82,8 @@ server <- function(input, output, session) {
         input[[paste0("del_button", id2)]],
         {
           data[[id2]] <<- NULL
-          delete$notify <- isolate(delete$notify) + 1
+          rvs$deleted <- isolate(rvs$deleted) + 1
+          rvs$changed <- different_data(data, dbdata)
         }
       )
     })
@@ -77,17 +94,18 @@ server <- function(input, output, session) {
   updateAdd <- reactive({
     if (input$add_button) {
       data[[random_id()]] <<- ""
+      rvs$changed <- different_data(data, dbdata)
     }
   })
 
   updateDelete <- reactive({
-    delete$notify
+    rvs$deleted
   })
 
   observeEvent(
     input$save_button,
     {
-      if (identical(data, dbdata)) {
+      if (!rvs$changed) {
         message("Nothing to write")
       } else {
         writeLines(unlist(data), con = input$inputFile)
