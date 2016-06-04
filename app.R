@@ -115,7 +115,8 @@ server <- function(input, output, session) {
 
   updateCancel <- reactive({
     if (!is.null(input$cancel_button) && input$cancel_button) {
-      load_db(input$inputFile)
+      data <<- dbdata
+      rvs$changed <- FALSE
     }
   })
 
