@@ -92,7 +92,7 @@ server <- function(input, output, session) {
   }
 
   updateAdd <- reactive({
-    if (input$add_button) {
+    if (!is.null(input$add_button) && input$add_button) {
       data[[random_id()]] <<- ""
       rvs$changed <- different_data(data, dbdata)
     }
@@ -114,7 +114,9 @@ server <- function(input, output, session) {
   )
 
   updateCancel <- reactive({
-    if (input$cancel_button) load_db(input$inputFile)
+    if (!is.null(input$cancel_button) && input$cancel_button) {
+      load_db(input$inputFile)
+    }
   })
 
   output$more_buttons <- renderUI({
