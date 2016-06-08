@@ -109,6 +109,8 @@ server <- function(input, output, session) {
         message("Nothing to write")
       } else {
         writeLines(unlist(data), con = input$inputFile)
+        dbdata <<- data
+        rvs$changed <- FALSE
       }
     }
   )
