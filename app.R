@@ -25,12 +25,14 @@ server <- function(input, output, session) {
   )
 
   observeEvent(input$file, {
+    cat("i Reading input file", input$file, "\n")
     d <- read.csv(input$file, stringsAsFactors = FALSE)
     rvs$data <- rvs$dbdata <- d
     rvs$recordState <- rvs$recordState + 1
   })
 
   observeEvent(input$add, {
+    cat("i Adding new record\n")
     newid <- if (nrow(rvs$data) == 0) {
       1
     } else {
@@ -41,16 +43,19 @@ server <- function(input, output, session) {
   })
 
   observeEvent(input$cancel, {
+    cat("i Cancelling all modifications\n")
     rvs$data <- rvs$dbdata
     rvs$recordState <- rvs$recordState + 1
   })
 
   observeEvent(input$save, {
+    cat("i Saving", input$file)
     write.csv(rvs$data, input$file, quote = FALSE, row.names = FALSE)
     rvs$dbdata <- rvs$data
   })
 
   output$records <- renderUI({
+    cat("i Updating record display\n")
     rvs$recordState
     mydata <- isolate(rvs$data)
     w <- lapply(seq_len(nrow(mydata)), function(i) {
