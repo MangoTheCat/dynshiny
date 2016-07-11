@@ -4,7 +4,7 @@ library(shiny)
 ui <- shinyUI(pageWithSidebar(
   headerPanel("Dynamic UI with database backend"),
   sidebarPanel(
-    selectInput("file", "File", choices = c("x.txt", "y.txt")),
+    selectInput("file", "File", choices = c("x.csv", "y.csv")),
     uiOutput("buttons")
   ),
   mainPanel(
