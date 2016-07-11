@@ -4,137 +4,100 @@ library(shiny)
 ui <- shinyUI(pageWithSidebar(
   headerPanel("Dynamic UI with database backend"),
   sidebarPanel(
-    selectInput("inputFile", "File", choices = c("x.txt", "y.txt")),
-    uiOutput("buttons")
+    selectInput("file", "File", choices = c("x.txt", "y.txt")),
+    div(
+      actionButton(inputId = "add", label = "Add"),
+      actionButton(inputId = "cancel", label = "Cancel"),
+      actionButton(inputId = "save", label = "Save", class = "btn-primary")
+    )
   ),
   mainPanel(
-    uiOutput("more_buttons")
+    uiOutput("records")
   )
 ))
 
-random_id <- function() {
-  paste(
-    sample(c(0:9, letters, LETTERS), 8, replace = TRUE),
-    collapse = ""
-  )
-}
-
 server <- function(input, output, session) {
 
-  data <- list()
-  dbdata <- list()
-  rvs <- reactiveValues(deleted = 0, changed = FALSE)
-
-  ## All buttons are dynamic, otherwise they wouldn't (easily)
-  ## be in the same row.
-  output$buttons <- renderUI({
-    div(
-      actionButton(inputId = "add_button", label = "Add"),
-      actionButton(inputId = "cancel_button", label = "Cancel"),
-      if (rvs$changed) {
-        actionButton(inputId = "save_button", label = "Save", class = "btn-primary")
-      }
-    )
-  })
-
-  updateDB <- reactive({
-    load_db(input$inputFile)
-  })
-
-  load_db <- function(db) {
-    d <- readLines(db)
-    n <- vapply(seq_along(d), function(x) random_id(), "")
-    dbdata <<- data <<- structure(as.list(d), names = n)
-    rvs$changed <- FALSE
-  }
-
-  different_data <- function(d1, d2) {
-    !identical(unname(d1), unname(d2))
-  }
-
-  create_button <- function(id, label, value) {
-
-    w <- div(wellPanel(
-      textInput(
-        paste0("input-", id),
-        label = label,
-        value = value
-      ),
-      actionButton(
-        inputId = paste0("del_button", id),
-        label = paste0("Delete"),
-        class = "btn-danger"
-      )
-    ))
-
-    local({
-      id2 <- id
-
-      observeEvent(
-        input[[paste0("input-", id2)]],
-        {
-          data[[id]] <<- input[[paste0("input-", id2)]]
-          rvs$changed <- different_data(data, dbdata)
-        }
-      )
-
-      observeEvent(
-        input[[paste0("del_button", id2)]],
-        {
-          data[[id2]] <<- NULL
-          rvs$deleted <- isolate(rvs$deleted) + 1
-          rvs$changed <- different_data(data, dbdata)
-        }
-      )
-    })
-
-    w
-  }
-
-  updateAdd <- reactive({
-    if (!is.null(input$add_button) && input$add_button) {
-      data[[random_id()]] <<- ""
-      rvs$changed <- different_data(data, dbdata)
-    }
-  })
-
-  updateDelete <- reactive({
-    rvs$deleted
-  })
-
-  observeEvent(
-    input$save_button,
-    {
-      if (!rvs$changed) {
-        message("Nothing to write")
-      } else {
-        writeLines(unlist(data), con = input$inputFile)
-        dbdata <<- data
-        rvs$changed <- FALSE
-      }
-    }
+  rvs <- reactiveValues(
+    data = list(),
+    dbdata = list(),
+    recordState = 1
   )
 
-  updateCancel <- reactive({
-    if (!is.null(input$cancel_button) && input$cancel_button) {
-      data <<- dbdata
-      rvs$changed <- FALSE
-    }
+  observeEvent(input$file, {
+    d <- read.csv(input$file, stringsAsFactors = FALSE)
+    rvs$data <- rvs$dbdata <- d
+    rvs$recordState <- rvs$recordState + 1
   })
 
-  output$more_buttons <- renderUI({
+  observeEvent(input$add, {
+    newid <- if (nrow(rvs$data) == 0) {
+      1
+    } else {
+      max(as.numeric(rvs$data$id)) + 1
+    }
+    rvs$data <- rbind(rvs$data, list(id = newid, description = ""))
+    rvs$recordState <- rvs$recordState + 1
+  })
 
-    updateAdd()
-    updateDB()
-    updateDelete()
-    updateCancel()
+  observeEvent(input$cancel, {
+    rvs$data <- rvs$dbdata
+    rvs$recordState <- rvs$recordState + 1
+  })
 
-    w <- lapply(seq_along(data), function(i) {
-      create_button(names(data)[i], "Description", data[[i]])
+  observeEvent(input$save, {
+    write.csv(rvs$data, input$file, quote = FALSE, row.names = FALSE)
+    rvs$dbdata <- rvs$data
+  })
+
+  output$records <- renderUI({
+    rvs$recordState
+    mydata <- isolate(rvs$data)
+    w <- lapply(seq_len(nrow(mydata)), function(i) {
+      create_record(i, mydata[i,])
     })
     do.call(fluidRow, w)
-
   })
+
+  create_record <- (function() {
+
+    inited <- 0
+
+    function(wid, record) {
+      w <- div(wellPanel(
+        textInput(
+          paste0("inp-", wid),
+          label = record$id,
+          value = record$description
+        ),
+        actionButton(
+          paste0("del-", wid),
+          label = "Delete",
+          class = "btn-danger"
+        )
+      ))
+
+      if (wid > inited) {
+
+        local({
+          wid2 <- wid
+
+          observeEvent(input[[paste0("inp-", wid2)]], {
+            rvs$data[wid2, "description"] <- input[[paste0("inp-", wid2)]]
+          })
+
+          observeEvent(input[[paste0("del-", wid2)]], {
+            rvs$data <- rvs$data[-wid2, , drop = FALSE]
+            rvs$recordState <- rvs$recordState + 1
+          })
+        })
+
+        inited <<- wid
+      }
+
+      w
+    }
+  })()
 }
 
 shinyApp(ui, server)
