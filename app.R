@@ -132,6 +132,10 @@ server <- function(input, output, session) {
   ## makes sure that we always rebuild the UI, whenever a rebuild was
   ## triggered by changing the `rvs$recordState` value.
   ##
+  ## Note the use of `isolate`. We do not want `output$records` to
+  ## depend on `rvs$data` directly, because we only want to rebuild the UI
+  ## after selected events, but not all data changes.
+  ##
   ## We use `create_record` to create the UI and the event wiring
   ## for each record. Its first argument is the widget id, a number
   ## between 1 and `n`, where `n` is the number of records on the screen.
