@@ -24,10 +24,14 @@ server <- function(input, output, session) {
   output$buttons <- renderUI({
     div(
       actionButton(inputId = "add", label = "Add"),
-      actionButton(inputId = "cancel", label = "Cancel"),
       if (! rvs$dataSame) {
-        actionButton(inputId = "save", label = "Save",
-                     class = "btn-primary")
+        span(
+          actionButton(inputId = "cancel", label = "Cancel"),
+          actionButton(inputId = "save", label = "Save",
+                       class = "btn-primary")
+        )
+      } else {
+        span()
       }
     )
   })
