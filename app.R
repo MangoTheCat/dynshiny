@@ -35,8 +35,6 @@ server <- function(input, output, session) {
   ## not all changes in the data require a UI rebuild.
   ##
   ## `dataSame` declares whether `data` and `dbdata` are the same.
-  ## I suppose we could also use a reactive expression instead of the
-  ## reactive value.
 
   rvs <- reactiveValues(
     data = list(),
