@@ -41,7 +41,7 @@ server <- function(input, output, session) {
     d <- read.csv(input$file, stringsAsFactors = FALSE)
     rvs$data <- rvs$dbdata <- d
     rvs$recordState <- rvs$recordState + 1
-    rvs$dataSame <- identical(rvs$data, rvs$dbdata)
+    rvs$dataSame <- TRUE
   })
 
   observeEvent(input$add, {
