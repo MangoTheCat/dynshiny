@@ -5,11 +5,7 @@ ui <- shinyUI(pageWithSidebar(
   headerPanel("Dynamic UI with database backend"),
   sidebarPanel(
     selectInput("file", "File", choices = c("x.txt", "y.txt")),
-    div(
-      actionButton(inputId = "add", label = "Add"),
-      actionButton(inputId = "cancel", label = "Cancel"),
-      actionButton(inputId = "save", label = "Save", class = "btn-primary")
-    )
+    uiOutput("buttons")
   ),
   mainPanel(
     uiOutput("records")
@@ -21,14 +17,27 @@ server <- function(input, output, session) {
   rvs <- reactiveValues(
     data = list(),
     dbdata = list(),
-    recordState = 1
+    recordState = 1,
+    dataSame = TRUE
   )
+
+  output$buttons <- renderUI({
+    div(
+      actionButton(inputId = "add", label = "Add"),
+      actionButton(inputId = "cancel", label = "Cancel"),
+      if (! rvs$dataSame) {
+        actionButton(inputId = "save", label = "Save",
+                     class = "btn-primary")
+      }
+    )
+  })
 
   observeEvent(input$file, {
     cat("i Reading input file", input$file, "\n")
     d <- read.csv(input$file, stringsAsFactors = FALSE)
     rvs$data <- rvs$dbdata <- d
     rvs$recordState <- rvs$recordState + 1
+    rvs$dataSame <- identical(rvs$data, rvs$dbdata)
   })
 
   observeEvent(input$add, {
@@ -40,18 +49,21 @@ server <- function(input, output, session) {
     }
     rvs$data <- rbind(rvs$data, list(id = newid, description = ""))
     rvs$recordState <- rvs$recordState + 1
+    rvs$dataSame <- identical(rvs$data, rvs$dbdata)
   })
 
   observeEvent(input$cancel, {
     cat("i Cancelling all modifications\n")
     rvs$data <- rvs$dbdata
     rvs$recordState <- rvs$recordState + 1
+    rvs$dataSame <- TRUE
   })
 
   observeEvent(input$save, {
     cat("i Saving", input$file)
     write.csv(rvs$data, input$file, quote = FALSE, row.names = FALSE)
     rvs$dbdata <- rvs$data
+    rvs$dataSame <- TRUE
   })
 
   output$records <- renderUI({
@@ -89,11 +101,13 @@ server <- function(input, output, session) {
 
           observeEvent(input[[paste0("inp-", wid2)]], {
             rvs$data[wid2, "description"] <- input[[paste0("inp-", wid2)]]
+            rvs$dataSame <- identical(rvs$data, rvs$dbdata)
           })
 
           observeEvent(input[[paste0("del-", wid2)]], {
             rvs$data <- rvs$data[-wid2, , drop = FALSE]
             rvs$recordState <- rvs$recordState + 1
+            rvs$dataSame <- identical(rvs$data, rvs$dbdata)
           })
         })
 
