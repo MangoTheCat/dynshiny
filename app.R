@@ -180,31 +180,22 @@ server <- function(input, output, session) {
 
       if (wid > inited) {
 
-        ## We need to create another closure here. `local` creates a brand
-        ## new environment, that is kept alive since the event handler
-        ## expressions refer to it. This is because `observeEvent` refers
-        ## to its calling environment.
+        ## Whenever the input changes, we update `data`. Note that we do
+        ## not trigger a UI rebuild in this case. That would result
+        ## deleting and re-adding all UI widgets as the user edits the
+        ## input field
 
-        local({
-          wid2 <- wid
+        observeEvent(input[[paste0("inp-", wid)]], {
+          rvs$data[wid, "description"] <- input[[paste0("inp-", wid)]]
+          rvs$dataSame <- identical(rvs$data, rvs$dbdata)
+        })
 
-          ## Whenever the input changes, we update `data`. Note that we do
-          ## not trigger a UI rebuild in this case. That would result
-          ## deleting and re-adding all UI widgets as the user edits the
-          ## input field
+        ## Deleting a record. Quite simple.
 
-          observeEvent(input[[paste0("inp-", wid2)]], {
-            rvs$data[wid2, "description"] <- input[[paste0("inp-", wid2)]]
-            rvs$dataSame <- identical(rvs$data, rvs$dbdata)
-          })
-
-          ## Deleting a record. Quite simple.
-
-          observeEvent(input[[paste0("del-", wid2)]], {
-            rvs$data <- rvs$data[-wid2, , drop = FALSE]
-            rvs$recordState <- rvs$recordState + 1
-            rvs$dataSame <- identical(rvs$data, rvs$dbdata)
-          })
+        observeEvent(input[[paste0("del-", wid)]], {
+          rvs$data <- rvs$data[-wid, , drop = FALSE]
+          rvs$recordState <- rvs$recordState + 1
+          rvs$dataSame <- identical(rvs$data, rvs$dbdata)
         })
 
         ## We need to update the number of wired widgets in the closure
