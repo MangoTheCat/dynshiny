@@ -1,5 +1,10 @@
 # Dynamically generated Shiny UI
 
+<br>
+<img width="400" src="./screen1.png" alt="">
+<img width="400" src="./screen2.png" alt="">
+<br>
+
 ## Introduction
 
 It often happens that the user interface of a Shiny application needs to be
@@ -41,8 +46,6 @@ It particular we want our app to satisfy the following requirements:
 While these requirements are quite straightforward, they are not completely
 trivial to implement in Shiny. In the following we will build a Shiny app
 that implements them, step by step.
-
-![](screen1.png) ![](screen2.png)
 
 ## The app
 
