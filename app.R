@@ -42,6 +42,8 @@
 #' trivial to implement in Shiny. In the following we will build a Shiny app
 #' that implements them, step by step.
 #' 
+#' ![](screen1.png) ![](screen2.png)
+#' 
 #' ## The app
 #' 
 library(shiny)
