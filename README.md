@@ -3,7 +3,7 @@
 ## Introduction
 
 It often happens that the user interface of a Shiny application needs to be
-generated dynamically, based on data or other parameters. One typical use
+generated dynamically, based on data or other variables. One typical use
 case is when the UI lets the user edit variable number of records from a
 database.
 
@@ -16,11 +16,6 @@ multiple roles for each employee. When you write a web app to edit the
 database, it makes sense to edit all roles of an employee on the same page:
 add or delete roles, or modify existing roles. This requires generating the
 user interface (UI) of the app dynamically, from the database.
-
-While there are multiple tutorials out there for writing Shiny apps with
-dynamic UI, most of them don't have the sophistication of a nice interface,
-and thus avoid facing some of the complications that we will discuss in
-this blog post.
 
 ## Requirements
 
@@ -36,7 +31,7 @@ It particular we want our app to satisfy the following requirements:
   data to the database.
 * It must be able to handle arbitrary number of roles for an employee,
   including no roles at all.
-* It must only modify the database, once the user clicks on the `Save`
+* It must only modify the database once the user clicks on the `Save`
   button.
 * It must have a `Cancel` button that discards all edits, and shows the
   employee roles as last read from the database.
@@ -44,8 +39,8 @@ It particular we want our app to satisfy the following requirements:
   not been changed.
 
 While these requirements are quite straightforward, they are not completely
-trivial to implement in Shiny. In the following we will build the Shiny app
-step by step, and comment on its code.
+trivial to implement in Shiny. In the following we will build a Shiny app
+that implements them, step by step.
 
 ## The app
 
@@ -54,11 +49,12 @@ step by step, and comment on its code.
 library(shiny)
 ```
 
-### The `ui` part of the app
+### The UI part of the app
 
-The `UI` definition of the app it quite straightforward, as most of the
+The UI definition of the app it quite straightforward, as most of the
 content will be dynamically generated. We will have the employee selection
-box on a side panel, and the roles of an employee on the main panel.
+box on a side panel, and the roles of the selected employee on the main
+panel.
 
 
 ```r
@@ -79,22 +75,22 @@ ui <- shinyUI(pageWithSidebar(
 ```
 
 For this simple example, we just list all employees here. In practice the
-employee names come from the database, of course. This does not add any
-complication to the app.
+employee names come from the database, of course.
 
-`buttons` will contain the `Save` and `Cancel` buttons. These are also
-dynamic, as they are only shown if the roles have changed.
+`buttons` will contain the `Add`, `Save` and `Cancel` buttons. The last
+two are dynamic, as they are only shown if the roles have changed. So we
+generate all three buttons dynamically.
 
 ### The `server` function
 
 We are ready to write the more complicated `server` function.
 
-First of all we need to store some reactive values that help us comparing
+First of all we need to store some reactive values that help us compare
 the current state of the roles to the state in the database, for the
 current employee.
 
 * `data` is the actual value of the roles being edited. This is updated
-  whenever the input widgets change. We assume that the data is a data
+  whenever the input widgets change. We assume that `data` is a data
   frame and each role is a row in it. For this simple app we assume that
   the data frame have columns `id`, `role`. The `id` field is a simple
   numeric id for the role of the employee.
@@ -108,6 +104,7 @@ current employee.
   - when `Cancel` is pressed
   - when a role is deleted
   - when a role is added
+
   Note that we don't rebuild the UI when existing roles are updated. So we
   cannot make the UI rebuild simply depend on `data`, because not all
   changes to `data` require a UI rebuild.
@@ -158,7 +155,7 @@ This app is different than usual apps, because it is event-driven. Many
 different output values can be updated, and then it is up to Shiny to make
 sure that they are updated whenever they need to.
 
-We found it hard to write this app the traditional way, mainly because the
+I found it hard to write this app the traditional way, mainly because the
 UI contains many action buttons that trigger dynamic UI changes, and also
 because the internal representation of the data must be changed without any
 output change. (More about the latter later.)
@@ -166,8 +163,9 @@ output change. (More about the latter later.)
 So again, this app is event-driven. We specify what should happen whenever
 the user presses the various action buttons, or edits the roles.
 
-The first event is a change in the selected employee. Should this  happen,
+The first event is a change in the selected employee. Should this happen,
 we
+
 1. set `data` and `dbdata` to the roles of the selected employee, and
 2. trigger a UI rebuild.
 
@@ -213,7 +211,7 @@ When the `Cancel` button is hit, we need to restore the data from the saved
 employee since we last read it from the database, so reading the data in
 again is an alternative to this.
 
-Then we trigger a UI rebuild. This is not always needed, but it is a
+Then we trigger a UI rebuild. This is not always needed, but it is the
 simplest way to make sure that the UI shows the current data.
 
 
@@ -240,7 +238,7 @@ to `data`. No UI rebuild is needed in this case.
 
 ### The main dynamic UI
 
-Next part is for rebuilding the main UI, that contains the employee
+The next part is rebuilding the main UI, that contains the employee
 roles. The dummy `rvs$recordState` expression makes sure that we always
 rebuild the UI, whenever a rebuild was triggered by changing the
 `rvs$recordState` value.
@@ -310,7 +308,7 @@ is a number between 1 and `inited`.
 
 Note that editing the text input field does not trigger a UI rebuild, and
 this is intentional. We don't want rebuilds just because the user has typed
-in something new to the input field.
+in something new in the input field.
 
 
 ```r
@@ -344,13 +342,13 @@ shinyApp(ui, server)
 
 This construct create a new function, that we assign to
 `create_role`. `create_role` has access to `inited`, the number of widgets
-wired up already, and it updated `inited` as needed.
+wired up already, and it updates `inited` as needed.
 
 ### Request for comments
 
 It took me a couple of days writing this small Shiny app. I don't claim
 that this is the simplest or best way to handle this use case, but it is
-the only approach that worked for us in three larger Shiny apps.
+the only approach that worked for us so far, in three larger Shiny apps.
 
 This said, I would be very excited to hear about alternative
 solutions. Should you have one, please open an issue in the
