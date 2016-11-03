@@ -1,26 +1,31 @@
-#' # Dynamically generated Shiny UI
+#' ---
+#' title: Dynamically generated Shiny UI
+#' author: "Gábor Csárdi — Mango Solutions,\n Joe Cheng — RStudio"
+#' runtime: shiny
+#' ---
+#' 
+#' ## Introduction
+#' 
+#' It often happens that the user interface of a Shiny application needs to be
+#' generated dynamically, based on data or program state in general. One
+#' typical use case that we encounter often is when the UI lets the user edit
+#' variable number of records from a database.
+#' 
+#' Imagine that you have an employee database, where each employee can be
+#' assigned multiple roles. Each assignment also has additional data, for
+#' example the proportion of work time the employee is expected to exercise
+#' that role, a comment field, etc. In a relational database, you would
+#' store this information in a `roles` table, where each row corresponds to
+#' one of the role assignments of an employee. When writing a web app to edit
+#' the database, it makes sense to edit all roles of an employee on the same
+#' page: add or delete roles, or modify existing ones. This requires
+#' generating the user interface (UI) of the app dynamically, from the
+#' database.
 #' 
 #' <br>
 #' <img width="400" src="./screen1.png" alt="">
 #' <img width="400" src="./screen2.png" alt="">
 #' <br>
-#' 
-#' ## Introduction
-#' 
-#' It often happens that the user interface of a Shiny application needs to be
-#' generated dynamically, based on data or other variables. One typical use
-#' case is when the UI lets the user edit variable number of records from a
-#' database.
-#' 
-#' Imagine that you have an employee database, where each employee can be
-#' assigned multiple roles. Each assignment also has additional data, for
-#' example the proportion of work time the employee is expected to exercise
-#' that role, a comment field, etc. In the relational database, you would
-#' store this information in a `roles` table, and then have (potentially)
-#' multiple roles for each employee. When you write a web app to edit the
-#' database, it makes sense to edit all roles of an employee on the same page:
-#' add or delete roles, or modify existing roles. This requires generating the
-#' user interface (UI) of the app dynamically, from the database.
 #' 
 #' ## Requirements
 #' 
@@ -40,7 +45,7 @@
 #'   button.
 #' * It must have a `Cancel` button that discards all edits, and shows the
 #'   employee roles as last read from the database.
-#' * The `Save` and `Cancel` buttons must be hidden if the employee data has
+#' * The `Save` and `Cancel` buttons must be hidden if the employee data have
 #'   not been changed.
 #' 
 #' While these requirements are quite straightforward, they are not completely
@@ -49,6 +54,7 @@
 #' 
 #' ## The app
 #' 
+## ------------------------------------------------------------------------
 library(shiny)
 
 #' 
@@ -59,6 +65,7 @@ library(shiny)
 #' box on a side panel, and the roles of the selected employee on the main
 #' panel.
 #' 
+## ------------------------------------------------------------------------
 ui <- shinyUI(pageWithSidebar(
   headerPanel("Employee role database"),
   sidebarPanel(
@@ -114,14 +121,15 @@ ui <- shinyUI(pageWithSidebar(
 #'   it is not needed, but it speeds up the decision whether or not the
 #'   `Cancel` and `Save` buttons should be shown.
 #' 
-server <- function(input, output, session) {
-
-  rvs <- reactiveValues(
-    data = list(),
-    dbdata = list(),
-    recordState = 1,
-    dataSame = TRUE
-  )
+## ----server-1, eval = FALSE----------------------------------------------
+## server <- function(input, output, session) {
+## 
+##   rvs <- reactiveValues(
+##     data = list(),
+##     dbdata = list(),
+##     recordState = 1,
+##     dataSame = TRUE
+##   )
 
 #' 
 #' ### Dynamic `Cancel` and `Save` buttons
@@ -129,20 +137,21 @@ server <- function(input, output, session) {
 #' The `Add` button is always shown. The `Cancel` and `Save` buttons are only
 #' shown if `data` and `dbdata` are not the same.
 #' 
-  output$buttons <- renderUI({
-    div(
-      actionButton(inputId = "add", label = "Add"),
-      if (! rvs$dataSame) {
-        span(
-          actionButton(inputId = "cancel", label = "Cancel"),
-          actionButton(inputId = "save", label = "Save",
-                       class = "btn-primary")
-        )
-      } else {
-        span()
-      }
-    )
-  })
+## ----server-2, eval = FALSE----------------------------------------------
+##   output$buttons <- renderUI({
+##     div(
+##       actionButton(inputId = "add", label = "Add"),
+##       if (! rvs$dataSame) {
+##         span(
+##           actionButton(inputId = "cancel", label = "Cancel"),
+##           actionButton(inputId = "save", label = "Save",
+##                        class = "btn-primary")
+##         )
+##       } else {
+##         span()
+##       }
+##     )
+##   })
 
 #' 
 #' ### Add reactivity
@@ -170,13 +179,14 @@ server <- function(input, output, session) {
 #' that is named according to the employee. It is easy to change this to a
 #' proper database query.
 #' 
-  observeEvent(input$employee, {
-    filename <- paste0(input$employee, ".csv")
-    d <- read.csv(filename, stringsAsFactors = FALSE)
-    rvs$data <- rvs$dbdata <- d
-    rvs$dataSame <- TRUE
-    rvs$recordState <- rvs$recordState + 1
-  })
+## ----server-3, eval = FALSE----------------------------------------------
+##   observeEvent(input$employee, {
+##     filename <- paste0(input$employee, ".csv")
+##     d <- read.csv(filename, stringsAsFactors = FALSE)
+##     rvs$data <- rvs$dbdata <- d
+##     rvs$dataSame <- TRUE
+##     rvs$recordState <- rvs$recordState + 1
+##   })
 
 #' 
 #' Next event is adding a new role. We create a new id for it first, then just
@@ -184,19 +194,20 @@ server <- function(input, output, session) {
 #' a UI rebuild. After adding a new role, it is highly unlikely that `data`
 #' and `dbdata` would be the same, but we check for it, nevertheless.
 #' 
-  observeEvent(input$add, {
-    newid <- if (nrow(rvs$data) == 0) {
-      1
-    } else {
-      max(as.numeric(rvs$data$id)) + 1
-    }
-    rvs$data <- rbind(
-      rvs$data,
-      list(id = newid, role = "")
-    )
-    rvs$recordState <- rvs$recordState + 1
-    rvs$dataSame <- identical(rvs$data, rvs$dbdata)
-  })
+## ----server-4, eval = FALSE----------------------------------------------
+##   observeEvent(input$add, {
+##     newid <- if (nrow(rvs$data) == 0) {
+##       1
+##     } else {
+##       max(as.numeric(rvs$data$id)) + 1
+##     }
+##     rvs$data <- rbind(
+##       rvs$data,
+##       list(id = newid, role = "")
+##     )
+##     rvs$recordState <- rvs$recordState + 1
+##     rvs$dataSame <- identical(rvs$data, rvs$dbdata)
+##   })
 
 #' 
 #' When the `Cancel` button is hit, we need to restore the data from the saved
@@ -207,22 +218,24 @@ server <- function(input, output, session) {
 #' Then we trigger a UI rebuild. This is not always needed, but it is the
 #' simplest way to make sure that the UI shows the current data.
 #' 
-  observeEvent(input$cancel, {
-    rvs$data <- rvs$dbdata
-    rvs$dataSame <- TRUE
-    rvs$recordState <- rvs$recordState + 1
-  })
+## ----server-5, eval = FALSE----------------------------------------------
+##   observeEvent(input$cancel, {
+##     rvs$data <- rvs$dbdata
+##     rvs$dataSame <- TRUE
+##     rvs$recordState <- rvs$recordState + 1
+##   })
 
 #' 
 #' The `Save` button is also simple. We write out the file, and set `dbdata`
 #' to `data`. No UI rebuild is needed in this case.
 #' 
-  observeEvent(input$save, {
-    filename <- paste0(input$employee, ".csv")
-    write.csv(rvs$data, filename, quote = FALSE, row.names = FALSE)
-    rvs$dbdata <- rvs$data
-    rvs$dataSame <- TRUE
-  })
+## ----server-6, eval = FALSE----------------------------------------------
+##   observeEvent(input$save, {
+##     filename <- paste0(input$employee, ".csv")
+##     write.csv(rvs$data, filename, quote = FALSE, row.names = FALSE)
+##     rvs$dbdata <- rvs$data
+##     rvs$dataSame <- TRUE
+##   })
 
 #' 
 #' ### The main dynamic UI
@@ -240,14 +253,15 @@ server <- function(input, output, session) {
 #' each role. Its first argument is the widget id, a number between `1` and
 #' `n`, where `n` is the number of roles on the screen.
 #' 
-  output$roles <- renderUI({
-    rvs$recordState
-    mydata <- isolate(rvs$data)
-    w <- lapply(seq_len(nrow(mydata)), function(i) {
-      create_role(i, mydata[i, ])
-    })
-    do.call(fluidRow, w)
-  })
+## ----server-7, eval = FALSE----------------------------------------------
+##   output$roles <- renderUI({
+##     rvs$recordState
+##     mydata <- isolate(rvs$data)
+##     w <- lapply(seq_len(nrow(mydata)), function(i) {
+##       create_role(i, mydata[i, ])
+##     })
+##     do.call(fluidRow, w)
+##   })
 
 #' 
 #' ### Creating the UI for a role
@@ -263,23 +277,24 @@ server <- function(input, output, session) {
 #' triggers will be still alive, and recreating them will trigger duplicate
 #' events.
 #' 
-  create_role <- (function() {
-
-    inited <- 0
-
-    function(wid, record) {
-      w <- div(wellPanel(
-        textInput(
-          paste0("inp-", wid),
-          label = record$id,
-          value = record$role
-        ),
-        actionButton(
-          paste0("del-", wid),
-          label = "Delete",
-          class = "btn-danger"
-        )
-      ))
+## ----server-8, eval = FALSE----------------------------------------------
+##   create_role <- (function() {
+## 
+##     inited <- 0
+## 
+##     function(wid, record) {
+##       w <- div(wellPanel(
+##         textInput(
+##           paste0("inp-", wid),
+##           label = record$id,
+##           value = record$role
+##         ),
+##         actionButton(
+##           paste0("del-", wid),
+##           label = "Delete",
+##           class = "btn-danger"
+##         )
+##       ))
 
 #' 
 #' So every time we build a widget with a given id (`wid`) number, we check if
@@ -295,30 +310,32 @@ server <- function(input, output, session) {
 #' this is intentional. We don't want rebuilds just because the user has typed
 #' in something new in the input field.
 #' 
-      if (wid > inited) {
-        observeEvent(input[[paste0("inp-", wid)]], {
-          rvs$data[wid, "role"] <- input[[paste0("inp-", wid)]]
-          rvs$dataSame <- identical(rvs$data, rvs$dbdata)
-        })
-
-        observeEvent(input[[paste0("del-", wid)]], {
-          rvs$data <- rvs$data[-wid, , drop = FALSE]
-          rvs$recordState <- rvs$recordState + 1
-          rvs$dataSame <- identical(rvs$data, rvs$dbdata)
-        })
+## ----server-9, eval = FALSE----------------------------------------------
+##       if (wid > inited) {
+##         observeEvent(input[[paste0("inp-", wid)]], {
+##           rvs$data[wid, "role"] <- input[[paste0("inp-", wid)]]
+##           rvs$dataSame <- identical(rvs$data, rvs$dbdata)
+##         })
+## 
+##         observeEvent(input[[paste0("del-", wid)]], {
+##           rvs$data <- rvs$data[-wid, , drop = FALSE]
+##           rvs$recordState <- rvs$recordState + 1
+##           rvs$dataSame <- identical(rvs$data, rvs$dbdata)
+##         })
 
 #' 
 #' We need to update `inited` if we created wiring for a new widget.
 #' 
-	    inited <<- wid
-      }
-
-      w
-    }
-  })()
-}
-
-shinyApp(ui, server)
+## ----server-10, eval = FALSE---------------------------------------------
+## 	    inited <<- wid
+##       }
+## 
+##       w
+##     }
+##   })()
+## }
+## 
+## shinyApp(ui, server, options = list(height = 1600))
 
 #' 
 #' This construct create a new function, that we assign to
@@ -337,4 +354,5 @@ shinyApp(ui, server)
 #' 
 #' ### Try the app
 #' 
-#' TODO
+## ----ref.label = paste0("server-", 1:10), echo = FALSE-------------------
+

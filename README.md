@@ -1,26 +1,31 @@
-# Dynamically generated Shiny UI
+---
+title: Dynamically generated Shiny UI
+author: "Gábor Csárdi — Mango Solutions,\n Joe Cheng — RStudio"
+runtime: shiny
+---
+
+## Introduction
+
+It often happens that the user interface of a Shiny application needs to be
+generated dynamically, based on data or program state in general. One
+typical use case that we encounter often is when the UI lets the user edit
+variable number of records from a database.
+
+Imagine that you have an employee database, where each employee can be
+assigned multiple roles. Each assignment also has additional data, for
+example the proportion of work time the employee is expected to exercise
+that role, a comment field, etc. In a relational database, you would
+store this information in a `roles` table, where each row corresponds to
+one of the role assignments of an employee. When writing a web app to edit
+the database, it makes sense to edit all roles of an employee on the same
+page: add or delete roles, or modify existing ones. This requires
+generating the user interface (UI) of the app dynamically, from the
+database.
 
 <br>
 <img width="400" src="./screen1.png" alt="">
 <img width="400" src="./screen2.png" alt="">
 <br>
-
-## Introduction
-
-It often happens that the user interface of a Shiny application needs to be
-generated dynamically, based on data or other variables. One typical use
-case is when the UI lets the user edit variable number of records from a
-database.
-
-Imagine that you have an employee database, where each employee can be
-assigned multiple roles. Each assignment also has additional data, for
-example the proportion of work time the employee is expected to exercise
-that role, a comment field, etc. In the relational database, you would
-store this information in a `roles` table, and then have (potentially)
-multiple roles for each employee. When you write a web app to edit the
-database, it makes sense to edit all roles of an employee on the same page:
-add or delete roles, or modify existing roles. This requires generating the
-user interface (UI) of the app dynamically, from the database.
 
 ## Requirements
 
@@ -40,7 +45,7 @@ It particular we want our app to satisfy the following requirements:
   button.
 * It must have a `Cancel` button that discards all edits, and shows the
   employee roles as last read from the database.
-* The `Save` and `Cancel` buttons must be hidden if the employee data has
+* The `Save` and `Cancel` buttons must be hidden if the employee data have
   not been changed.
 
 While these requirements are quite straightforward, they are not completely
@@ -342,7 +347,7 @@ We need to update `inited` if we created wiring for a new widget.
   })()
 }
 
-shinyApp(ui, server)
+shinyApp(ui, server, options = list(height = 1600))
 ```
 
 This construct create a new function, that we assign to
@@ -361,4 +366,7 @@ https://github.com/MangoTheCat/dynshiny repository. Thank you!
 
 ### Try the app
 
-TODO
+
+```
+## Error in appshot.shiny.appobj(structure(list(httpHandler = function (req) : appshot of Shiny app objects is not yet supported.
+```

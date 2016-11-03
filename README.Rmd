@@ -1,26 +1,31 @@
-# Dynamically generated Shiny UI
+---
+title: Dynamically generated Shiny UI
+author: "Gábor Csárdi — Mango Solutions,\n Joe Cheng — RStudio"
+runtime: shiny
+---
+
+## Introduction
+
+It often happens that the user interface of a Shiny application needs to be
+generated dynamically, based on data or program state in general. One
+typical use case that we encounter often is when the UI lets the user edit
+variable number of records from a database.
+
+Imagine that you have an employee database, where each employee can be
+assigned multiple roles. Each assignment also has additional data, for
+example the proportion of work time the employee is expected to exercise
+that role, a comment field, etc. In a relational database, you would
+store this information in a `roles` table, where each row corresponds to
+one of the role assignments of an employee. When writing a web app to edit
+the database, it makes sense to edit all roles of an employee on the same
+page: add or delete roles, or modify existing ones. This requires
+generating the user interface (UI) of the app dynamically, from the
+database.
 
 <br>
 <img width="400" src="./screen1.png" alt="">
 <img width="400" src="./screen2.png" alt="">
 <br>
-
-## Introduction
-
-It often happens that the user interface of a Shiny application needs to be
-generated dynamically, based on data or other variables. One typical use
-case is when the UI lets the user edit variable number of records from a
-database.
-
-Imagine that you have an employee database, where each employee can be
-assigned multiple roles. Each assignment also has additional data, for
-example the proportion of work time the employee is expected to exercise
-that role, a comment field, etc. In the relational database, you would
-store this information in a `roles` table, and then have (potentially)
-multiple roles for each employee. When you write a web app to edit the
-database, it makes sense to edit all roles of an employee on the same page:
-add or delete roles, or modify existing roles. This requires generating the
-user interface (UI) of the app dynamically, from the database.
 
 ## Requirements
 
@@ -40,7 +45,7 @@ It particular we want our app to satisfy the following requirements:
   button.
 * It must have a `Cancel` button that discards all edits, and shows the
   employee roles as last read from the database.
-* The `Save` and `Cancel` buttons must be hidden if the employee data has
+* The `Save` and `Cancel` buttons must be hidden if the employee data have
   not been changed.
 
 While these requirements are quite straightforward, they are not completely
@@ -116,7 +121,7 @@ current employee.
   it is not needed, but it speeds up the decision whether or not the
   `Cancel` and `Save` buttons should be shown.
 
-```{r eval = FALSE}
+```{r server-1, eval = FALSE}
 server <- function(input, output, session) {
 
   rvs <- reactiveValues(
@@ -132,7 +137,7 @@ server <- function(input, output, session) {
 The `Add` button is always shown. The `Cancel` and `Save` buttons are only
 shown if `data` and `dbdata` are not the same.
 
-```{r eval = FALSE}
+```{r server-2, eval = FALSE}
   output$buttons <- renderUI({
     div(
       actionButton(inputId = "add", label = "Add"),
@@ -174,7 +179,7 @@ For simplicity, we assume that each employee's data is stored in a CSV file
 that is named according to the employee. It is easy to change this to a
 proper database query.
 
-```{r eval = FALSE}
+```{r server-3, eval = FALSE}
   observeEvent(input$employee, {
     filename <- paste0(input$employee, ".csv")
     d <- read.csv(filename, stringsAsFactors = FALSE)
@@ -189,7 +194,7 @@ add it to the bottom of the data frame that holds the data. Then we trigger
 a UI rebuild. After adding a new role, it is highly unlikely that `data`
 and `dbdata` would be the same, but we check for it, nevertheless.
 
-```{r eval = FALSE}
+```{r server-4, eval = FALSE}
   observeEvent(input$add, {
     newid <- if (nrow(rvs$data) == 0) {
       1
@@ -213,7 +218,7 @@ again is an alternative to this.
 Then we trigger a UI rebuild. This is not always needed, but it is the
 simplest way to make sure that the UI shows the current data.
 
-```{r eval = FALSE}
+```{r server-5, eval = FALSE}
   observeEvent(input$cancel, {
     rvs$data <- rvs$dbdata
     rvs$dataSame <- TRUE
@@ -224,7 +229,7 @@ simplest way to make sure that the UI shows the current data.
 The `Save` button is also simple. We write out the file, and set `dbdata`
 to `data`. No UI rebuild is needed in this case.
 
-```{r eval = FALSE}
+```{r server-6, eval = FALSE}
   observeEvent(input$save, {
     filename <- paste0(input$employee, ".csv")
     write.csv(rvs$data, filename, quote = FALSE, row.names = FALSE)
@@ -248,7 +253,7 @@ We use `create_role` to create the UI and (possibly) the event wiring for
 each role. Its first argument is the widget id, a number between `1` and
 `n`, where `n` is the number of roles on the screen.
 
-```{r eval = FALSE}
+```{r server-7, eval = FALSE}
   output$roles <- renderUI({
     rvs$recordState
     mydata <- isolate(rvs$data)
@@ -272,7 +277,7 @@ even if we rebuild the UI, and remove some elements, the previously created
 triggers will be still alive, and recreating them will trigger duplicate
 events.
 
-```{r eval = FALSE}
+```{r server-8, eval = FALSE}
   create_role <- (function() {
 
     inited <- 0
@@ -305,7 +310,7 @@ Note that editing the text input field does not trigger a UI rebuild, and
 this is intentional. We don't want rebuilds just because the user has typed
 in something new in the input field.
 
-```{r eval = FALSE}
+```{r server-9, eval = FALSE}
       if (wid > inited) {
         observeEvent(input[[paste0("inp-", wid)]], {
           rvs$data[wid, "role"] <- input[[paste0("inp-", wid)]]
@@ -321,7 +326,7 @@ in something new in the input field.
 
 We need to update `inited` if we created wiring for a new widget.
 
-```{r eval = FALSE}
+```{r server-10, eval = FALSE}
 	    inited <<- wid
       }
 
@@ -330,7 +335,7 @@ We need to update `inited` if we created wiring for a new widget.
   })()
 }
 
-shinyApp(ui, server)
+shinyApp(ui, server, options = list(height = 1600))
 ```
 
 This construct create a new function, that we assign to
@@ -349,4 +354,5 @@ https://github.com/MangoTheCat/dynshiny repository. Thank you!
 
 ### Try the app
 
-TODO
+```{r ref.label = paste0("server-", 1:10), echo = FALSE}
+```
