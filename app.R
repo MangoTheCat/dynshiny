@@ -86,50 +86,94 @@ ui <- shinyUI(pageWithSidebar(
 #' employee names come from the database, of course.
 #' 
 #' `buttons` will contain the `Add`, `Save` and `Cancel` buttons. The last
-#' two are dynamic, as they are only shown if the roles have changed. So we
-#' generate all three buttons dynamically.
+#' two are dynamic, as they are only shown if the roles have changed. For 
+#' simplicity we generate all three buttons dynamically.
+#' 
+#' ### Structure of the app
+#' 
+#' This app is different than usual apps, because a significant part of it is
+#' event-driven. Many (most?) Shiny apps are purely reactive, i.e. they only
+#' contain recipes for how the different output values can be updated, and 
+#' then it is up to Shiny to make sure that they are updated whenever they
+#' need to.
+#' 
+#' We found it hard to write this app the traditional way, mainly because the
+#' UI contains many action buttons that trigger dynamic UI changes, and also
+#' because the internal representation of the data must be changed without any
+#' output change.
+#' 
+#' The app will have the following main pieces:
+#' * We need to store the data that is on the user's screen, and update it,
+#'   as it changes. This be in the `data` reactive value.
+#' * We need to store the data as in the database, to be able to compare
+#'   them and show/hide the 'Save' and 'Cancel' buttons. We'll use the `dbdata()`
+#'   reactive for this.
+#' * We will use a `renderUI()` call to create the 'Add', 'Cancel' and 'Save'
+#'   buttons, as needed.
+#' * We'll attach events to the 'Add', 'Cancel' and 'Save' buttons, using
+#'   `observeEvent()`.
+#' * We'll use a `renderUI()` call to create the UI for the records, with a 
+#'   helper function, `createRecord()`, that creates a single record.
+#' 
+#' ### Triggering UI changes
+#' 
+#' To trigger UI changes as needed, we introduce a reactive trigger constuct:
+## ------------------------------------------------------------------------
+makeReactiveTrigger <- function() {
+   rv <- reactiveValues(a = 0)
+   list(
+     depend = function() {
+       rv$a
+       invisible()
+     },
+     trigger = function() {
+       rv$a <- isolate(rv$a + 1)
+     }
+   )
+ }
+
+#' `makeReactiveTrigger` creates reactive triggers. A reactive trigger has
+#' two parts: 
+#' 1. `$depend()` can be used within reactive expressions to declare that
+#'    the reactive expression must be updated whenever the trigger sets off.
+#' 2. `$trigger()` sets off the trigger.   
+#' For the purpose of this post it is not very important how a reactive
+#' trigger works. It is sufficient to know that whenever it is `trigger()`-ed,
+#' all the `depend()`ent reactives are updated.
 #' 
 #' ### The `server` function
 #' 
 #' We are ready to write the more complicated `server` function.
 #' 
-#' First of all we need to store some reactive values that help us compare
-#' the current state of the roles to the state in the database, for the
-#' current employee.
+#' We will use the `data` reactive value to store the current values of the
+#' roles. `data` is updated whenever the input widgets change. (See later, 
+#' when we create these widgets, in `createRecord()`.) 
 #' 
-#' * `data` is the actual value of the roles being edited. This is updated
-#'   whenever the input widgets change. We assume that `data` is a data
-#'   frame and each role is a row in it. For this simple app we assume that
-#'   the data frame have columns `id`, `role`. The `id` field is a simple
-#'   numeric id for the role of the employee.
-#' 
-#' * `dbdata` holds the data that was read from the database. We keep this to
-#'   be able to tell if something has changed.
-#' 
-#' * `recordState` is a dummy variable that we change every time we need to
-#'   rebuild the widgets that hold the roles:
-#'   - when another employee is selected
-#'   - when `Cancel` is pressed
-#'   - when a role is deleted
-#'   - when a role is added
-#' 
-#'   Note that we don't rebuild the UI when existing roles are updated. So we
-#'   cannot make the UI rebuild simply depend on `data`, because not all
-#'   changes to `data` require a UI rebuild.
-#' 
-#' * `dataSame` declares whether `data` and `dbdata` are the same. Technically
-#'   it is not needed, but it speeds up the decision whether or not the
-#'   `Cancel` and `Save` buttons should be shown.
+#' We assume that `data` is a data frame and each role corresponds to a row
+#' in it. For this simple app `data` has columns `id` and `role` only. Other
+#' metadata can be easily added as additional columns. The `id` field is a
+#' simple numeric id of the employee.
 #' 
 ## ----server-1, eval = FALSE----------------------------------------------
 ## server <- function(input, output, session) {
-## 
-##   rvs <- reactiveValues(
-##     data = list(),
-##     dbdata = list(),
-##     recordState = 1,
-##     dataSame = TRUE
-##   )
+##   rvs <- reactiveValues(data = NULL)
+
+#' 
+#' We'll use `uiTrigger` to trigger a UI rebuild. This trigger is the heart of the app:
+#' we use it to control UI rebuilds for the records.
+#' 
+## ----server-2, eval = FALSE----------------------------------------------
+##   uiTrigger <- makeReactiveTrigger()
+
+#' 
+#' 
+#' 
+## ----server-3, eval = FALSE----------------------------------------------
+##   dbdata <- reactive({
+##     req(input$file)
+##     read.csv(input$file, stringsAsFactors = FALSE)
+##     uiTrigger$trigger()
+##   })
 
 #' 
 #' ### Dynamic `Cancel` and `Save` buttons
@@ -137,11 +181,15 @@ ui <- shinyUI(pageWithSidebar(
 #' The `Add` button is always shown. The `Cancel` and `Save` buttons are only
 #' shown if `data` and `dbdata` are not the same.
 #' 
-## ----server-2, eval = FALSE----------------------------------------------
+## ----server-5, eval = FALSE----------------------------------------------
+##   dataSame <- reactive({
+##     identical(rvs$data, dbdata())
+##   })
+## 
 ##   output$buttons <- renderUI({
 ##     div(
 ##       actionButton(inputId = "add", label = "Add"),
-##       if (! rvs$dataSame) {
+##       if (! dataSame()) {
 ##         span(
 ##           actionButton(inputId = "cancel", label = "Cancel"),
 ##           actionButton(inputId = "save", label = "Save",
@@ -156,16 +204,6 @@ ui <- shinyUI(pageWithSidebar(
 #' 
 #' ### Add reactivity
 #' 
-#' This app is different than usual apps, because it is event-driven. Many
-#' (most?) shiny apps are reactive, i.e. they only contain recipes for how the
-#' different output values can be updated, and then it is up to Shiny to make
-#' sure that they are updated whenever they need to.
-#' 
-#' I found it hard to write this app the traditional way, mainly because the
-#' UI contains many action buttons that trigger dynamic UI changes, and also
-#' because the internal representation of the data must be changed without any
-#' output change. (More about the latter later.)
-#' 
 #' So again, this app is event-driven. We specify what should happen whenever
 #' the user presses the various action buttons, or edits the roles.
 #' 
@@ -179,7 +217,7 @@ ui <- shinyUI(pageWithSidebar(
 #' that is named according to the employee. It is easy to change this to a
 #' proper database query.
 #' 
-## ----server-3, eval = FALSE----------------------------------------------
+## ----server-6, eval = FALSE----------------------------------------------
 ##   observeEvent(input$employee, {
 ##     filename <- paste0(input$employee, ".csv")
 ##     d <- read.csv(filename, stringsAsFactors = FALSE)
@@ -194,7 +232,7 @@ ui <- shinyUI(pageWithSidebar(
 #' a UI rebuild. After adding a new role, it is highly unlikely that `data`
 #' and `dbdata` would be the same, but we check for it, nevertheless.
 #' 
-## ----server-4, eval = FALSE----------------------------------------------
+## ----server-7, eval = FALSE----------------------------------------------
 ##   observeEvent(input$add, {
 ##     newid <- if (nrow(rvs$data) == 0) {
 ##       1
@@ -218,7 +256,7 @@ ui <- shinyUI(pageWithSidebar(
 #' Then we trigger a UI rebuild. This is not always needed, but it is the
 #' simplest way to make sure that the UI shows the current data.
 #' 
-## ----server-5, eval = FALSE----------------------------------------------
+## ----server-8, eval = FALSE----------------------------------------------
 ##   observeEvent(input$cancel, {
 ##     rvs$data <- rvs$dbdata
 ##     rvs$dataSame <- TRUE
@@ -229,7 +267,7 @@ ui <- shinyUI(pageWithSidebar(
 #' The `Save` button is also simple. We write out the file, and set `dbdata`
 #' to `data`. No UI rebuild is needed in this case.
 #' 
-## ----server-6, eval = FALSE----------------------------------------------
+## ----server-9, eval = FALSE----------------------------------------------
 ##   observeEvent(input$save, {
 ##     filename <- paste0(input$employee, ".csv")
 ##     write.csv(rvs$data, filename, quote = FALSE, row.names = FALSE)
@@ -253,7 +291,7 @@ ui <- shinyUI(pageWithSidebar(
 #' each role. Its first argument is the widget id, a number between `1` and
 #' `n`, where `n` is the number of roles on the screen.
 #' 
-## ----server-7, eval = FALSE----------------------------------------------
+## ----server-10, eval = FALSE---------------------------------------------
 ##   output$roles <- renderUI({
 ##     rvs$recordState
 ##     mydata <- isolate(rvs$data)
@@ -277,7 +315,7 @@ ui <- shinyUI(pageWithSidebar(
 #' triggers will be still alive, and recreating them will trigger duplicate
 #' events.
 #' 
-## ----server-8, eval = FALSE----------------------------------------------
+## ----server-11, eval = FALSE---------------------------------------------
 ##   create_role <- (function() {
 ## 
 ##     inited <- 0
@@ -310,7 +348,7 @@ ui <- shinyUI(pageWithSidebar(
 #' this is intentional. We don't want rebuilds just because the user has typed
 #' in something new in the input field.
 #' 
-## ----server-9, eval = FALSE----------------------------------------------
+## ----server-12, eval = FALSE---------------------------------------------
 ##       if (wid > inited) {
 ##         observeEvent(input[[paste0("inp-", wid)]], {
 ##           rvs$data[wid, "role"] <- input[[paste0("inp-", wid)]]
@@ -326,7 +364,7 @@ ui <- shinyUI(pageWithSidebar(
 #' 
 #' We need to update `inited` if we created wiring for a new widget.
 #' 
-## ----server-10, eval = FALSE---------------------------------------------
+## ----server-13, eval = FALSE---------------------------------------------
 ## 	    inited <<- wid
 ##       }
 ## 
@@ -354,5 +392,5 @@ ui <- shinyUI(pageWithSidebar(
 #' 
 #' ### Try the app
 #' 
-## ----ref.label = paste0("server-", 1:10), echo = FALSE-------------------
+## ----ref.label = paste0("server-", 1:13), echo = FALSE-------------------
 

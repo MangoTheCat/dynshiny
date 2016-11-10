@@ -88,51 +88,98 @@ For this simple example, we just list all employees here. In practice the
 employee names come from the database, of course.
 
 `buttons` will contain the `Add`, `Save` and `Cancel` buttons. The last
-two are dynamic, as they are only shown if the roles have changed. So we
-generate all three buttons dynamically.
+two are dynamic, as they are only shown if the roles have changed. For 
+simplicity we generate all three buttons dynamically.
+
+### Structure of the app
+
+This app is different than usual apps, because a significant part of it is
+event-driven. Many (most?) Shiny apps are purely reactive, i.e. they only
+contain recipes for how the different output values can be updated, and 
+then it is up to Shiny to make sure that they are updated whenever they
+need to.
+
+We found it hard to write this app the traditional way, mainly because the
+UI contains many action buttons that trigger dynamic UI changes, and also
+because the internal representation of the data must be changed without any
+output change.
+
+The app will have the following main pieces:
+* We need to store the data that is on the user's screen, and update it,
+  as it changes. This be in the `data` reactive value.
+* We need to store the data as in the database, to be able to compare
+  them and show/hide the 'Save' and 'Cancel' buttons. We'll use the `dbdata()`
+  reactive for this.
+* We will use a `renderUI()` call to create the 'Add', 'Cancel' and 'Save'
+  buttons, as needed.
+* We'll attach events to the 'Add', 'Cancel' and 'Save' buttons, using
+  `observeEvent()`.
+* We'll use a `renderUI()` call to create the UI for the records, with a 
+  helper function, `createRecord()`, that creates a single record.
+
+### Triggering UI changes
+
+To trigger UI changes as needed, we introduce a reactive trigger constuct:
+
+```r
+makeReactiveTrigger <- function() {
+   rv <- reactiveValues(a = 0)
+   list(
+     depend = function() {
+       rv$a
+       invisible()
+     },
+     trigger = function() {
+       rv$a <- isolate(rv$a + 1)
+     }
+   )
+ }
+```
+`makeReactiveTrigger` creates reactive triggers. A reactive trigger has
+two parts: 
+1. `$depend()` can be used within reactive expressions to declare that
+   the reactive expression must be updated whenever the trigger sets off.
+2. `$trigger()` sets off the trigger.   
+For the purpose of this post it is not very important how a reactive
+trigger works. It is sufficient to know that whenever it is `trigger()`-ed,
+all the `depend()`ent reactives are updated.
 
 ### The `server` function
 
 We are ready to write the more complicated `server` function.
 
-First of all we need to store some reactive values that help us compare
-the current state of the roles to the state in the database, for the
-current employee.
+We will use the `data` reactive value to store the current values of the
+roles. `data` is updated whenever the input widgets change. (See later, 
+when we create these widgets, in `createRecord()`.) 
 
-* `data` is the actual value of the roles being edited. This is updated
-  whenever the input widgets change. We assume that `data` is a data
-  frame and each role is a row in it. For this simple app we assume that
-  the data frame have columns `id`, `role`. The `id` field is a simple
-  numeric id for the role of the employee.
-
-* `dbdata` holds the data that was read from the database. We keep this to
-  be able to tell if something has changed.
-
-* `recordState` is a dummy variable that we change every time we need to
-  rebuild the widgets that hold the roles:
-  - when another employee is selected
-  - when `Cancel` is pressed
-  - when a role is deleted
-  - when a role is added
-
-  Note that we don't rebuild the UI when existing roles are updated. So we
-  cannot make the UI rebuild simply depend on `data`, because not all
-  changes to `data` require a UI rebuild.
-
-* `dataSame` declares whether `data` and `dbdata` are the same. Technically
-  it is not needed, but it speeds up the decision whether or not the
-  `Cancel` and `Save` buttons should be shown.
+We assume that `data` is a data frame and each role corresponds to a row
+in it. For this simple app `data` has columns `id` and `role` only. Other
+metadata can be easily added as additional columns. The `id` field is a
+simple numeric id of the employee.
 
 
 ```r
 server <- function(input, output, session) {
+  rvs <- reactiveValues(data = NULL)
+```
 
-  rvs <- reactiveValues(
-    data = list(),
-    dbdata = list(),
-    recordState = 1,
-    dataSame = TRUE
-  )
+We'll use `uiTrigger` to trigger a UI rebuild. This trigger is the heart of the app:
+we use it to control UI rebuilds for the records.
+
+
+```r
+  uiTrigger <- makeReactiveTrigger()
+```
+
+
+
+
+```r
+  dbdata <- reactive({
+    req(input$file)
+    read.csv(input$file, stringsAsFactors = FALSE)
+    uiTrigger$trigger()
+  })
 ```
 
 ### Dynamic `Cancel` and `Save` buttons
@@ -142,10 +189,14 @@ shown if `data` and `dbdata` are not the same.
 
 
 ```r
+  dataSame <- reactive({
+    identical(rvs$data, dbdata())
+  })
+
   output$buttons <- renderUI({
     div(
       actionButton(inputId = "add", label = "Add"),
-      if (! rvs$dataSame) {
+      if (! dataSame()) {
         span(
           actionButton(inputId = "cancel", label = "Cancel"),
           actionButton(inputId = "save", label = "Save",
@@ -159,16 +210,6 @@ shown if `data` and `dbdata` are not the same.
 ```
 
 ### Add reactivity
-
-This app is different than usual apps, because it is event-driven. Many
-(most?) shiny apps are reactive, i.e. they only contain recipes for how the
-different output values can be updated, and then it is up to Shiny to make
-sure that they are updated whenever they need to.
-
-I found it hard to write this app the traditional way, mainly because the
-UI contains many action buttons that trigger dynamic UI changes, and also
-because the internal representation of the data must be changed without any
-output change. (More about the latter later.)
 
 So again, this app is event-driven. We specify what should happen whenever
 the user presses the various action buttons, or edits the roles.
