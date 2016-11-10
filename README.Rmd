@@ -164,6 +164,7 @@ we use it to control UI rebuilds for the records.
 
 ```{r server-2, eval = FALSE}
   uiTrigger <- makeReactiveTrigger()
+  fileTrigger <- makeReactiveTrigger()
 ```
 
 
@@ -171,6 +172,7 @@ we use it to control UI rebuilds for the records.
 ```{r server-3, eval = FALSE}
   dbdata <- reactive({
     cat("i reading input file\n")
+    fileTrigger$depend()
     req(input$employee)
     filename <- paste0(input$employee, ".csv")
     read.csv(filename, stringsAsFactors = FALSE)
@@ -263,7 +265,8 @@ to `data`. No UI rebuild is needed in this case.
 ```{r server-7, eval = FALSE}
   observeEvent(input$save, {
     cat("i saving to file\n")
-    write.csv(rvs$data, input$employee, quote = FALSE, row.names = FALSE)
+    filename <- paste0(input$employee, ".csv")
+    write.csv(rvs$data, filename, quote = FALSE, row.names = FALSE)
     fileTrigger$trigger()
   })
 ```

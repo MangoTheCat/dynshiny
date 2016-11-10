@@ -164,14 +164,22 @@ makeReactiveTrigger <- function() {
 #' 
 ## ----server-2, eval = FALSE----------------------------------------------
 ##   uiTrigger <- makeReactiveTrigger()
+##   fileTrigger <- makeReactiveTrigger()
 
 #' 
 #' 
 #' 
 ## ----server-3, eval = FALSE----------------------------------------------
 ##   dbdata <- reactive({
-##     req(input$file)
-##     read.csv(input$file, stringsAsFactors = FALSE)
+##     cat("i reading input file\n")
+##     fileTrigger$depend()
+##     req(input$employee)
+##     filename <- paste0(input$employee, ".csv")
+##     read.csv(filename, stringsAsFactors = FALSE)
+##   })
+## 
+##   observeEvent(dbdata(), {
+##     rvs$data <- dbdata()
 ##     uiTrigger$trigger()
 ##   })
 
@@ -181,7 +189,7 @@ makeReactiveTrigger <- function() {
 #' The `Add` button is always shown. The `Cancel` and `Save` buttons are only
 #' shown if `data` and `dbdata` are not the same.
 #' 
-## ----server-5, eval = FALSE----------------------------------------------
+## ----server-4, eval = FALSE----------------------------------------------
 ##   dataSame <- reactive({
 ##     identical(rvs$data, dbdata())
 ##   })
@@ -217,34 +225,21 @@ makeReactiveTrigger <- function() {
 #' that is named according to the employee. It is easy to change this to a
 #' proper database query.
 #' 
-## ----server-6, eval = FALSE----------------------------------------------
-##   observeEvent(input$employee, {
-##     filename <- paste0(input$employee, ".csv")
-##     d <- read.csv(filename, stringsAsFactors = FALSE)
-##     rvs$data <- rvs$dbdata <- d
-##     rvs$dataSame <- TRUE
-##     rvs$recordState <- rvs$recordState + 1
-##   })
-
-#' 
 #' Next event is adding a new role. We create a new id for it first, then just
 #' add it to the bottom of the data frame that holds the data. Then we trigger
 #' a UI rebuild. After adding a new role, it is highly unlikely that `data`
 #' and `dbdata` would be the same, but we check for it, nevertheless.
 #' 
-## ----server-7, eval = FALSE----------------------------------------------
+## ----server-5, eval = FALSE----------------------------------------------
 ##   observeEvent(input$add, {
+##     cat("i adding a new record\n")
 ##     newid <- if (nrow(rvs$data) == 0) {
-##       1
+##       1L
 ##     } else {
-##       max(as.numeric(rvs$data$id)) + 1
+##       max(as.integer(rvs$data$id)) + 1L
 ##     }
-##     rvs$data <- rbind(
-##       rvs$data,
-##       list(id = newid, role = "")
-##     )
-##     rvs$recordState <- rvs$recordState + 1
-##     rvs$dataSame <- identical(rvs$data, rvs$dbdata)
+##     rvs$data <- rbind(rvs$data, list(id = newid, role = ""))
+##     uiTrigger$trigger()
 ##   })
 
 #' 
@@ -256,23 +251,23 @@ makeReactiveTrigger <- function() {
 #' Then we trigger a UI rebuild. This is not always needed, but it is the
 #' simplest way to make sure that the UI shows the current data.
 #' 
-## ----server-8, eval = FALSE----------------------------------------------
+## ----server-6, eval = FALSE----------------------------------------------
 ##   observeEvent(input$cancel, {
-##     rvs$data <- rvs$dbdata
-##     rvs$dataSame <- TRUE
-##     rvs$recordState <- rvs$recordState + 1
+##     cat("i cancelling edits\n")
+##     rvs$data <- dbdata()
+##     uiTrigger$trigger()
 ##   })
 
 #' 
 #' The `Save` button is also simple. We write out the file, and set `dbdata`
 #' to `data`. No UI rebuild is needed in this case.
 #' 
-## ----server-9, eval = FALSE----------------------------------------------
+## ----server-7, eval = FALSE----------------------------------------------
 ##   observeEvent(input$save, {
+##     cat("i saving to file\n")
 ##     filename <- paste0(input$employee, ".csv")
 ##     write.csv(rvs$data, filename, quote = FALSE, row.names = FALSE)
-##     rvs$dbdata <- rvs$data
-##     rvs$dataSame <- TRUE
+##     fileTrigger$trigger()
 ##   })
 
 #' 
@@ -291,9 +286,10 @@ makeReactiveTrigger <- function() {
 #' each role. Its first argument is the widget id, a number between `1` and
 #' `n`, where `n` is the number of roles on the screen.
 #' 
-## ----server-10, eval = FALSE---------------------------------------------
+## ----server-8, eval = FALSE----------------------------------------------
 ##   output$roles <- renderUI({
-##     rvs$recordState
+##     cat("i rebuild the UI\n")
+##     uiTrigger$depend()
 ##     mydata <- isolate(rvs$data)
 ##     w <- lapply(seq_len(nrow(mydata)), function(i) {
 ##       create_role(i, mydata[i, ])
@@ -315,7 +311,7 @@ makeReactiveTrigger <- function() {
 #' triggers will be still alive, and recreating them will trigger duplicate
 #' events.
 #' 
-## ----server-11, eval = FALSE---------------------------------------------
+## ----server-9, eval = FALSE----------------------------------------------
 ##   create_role <- (function() {
 ## 
 ##     inited <- 0
@@ -348,23 +344,21 @@ makeReactiveTrigger <- function() {
 #' this is intentional. We don't want rebuilds just because the user has typed
 #' in something new in the input field.
 #' 
-## ----server-12, eval = FALSE---------------------------------------------
+## ----server-10, eval = FALSE---------------------------------------------
 ##       if (wid > inited) {
 ##         observeEvent(input[[paste0("inp-", wid)]], {
 ##           rvs$data[wid, "role"] <- input[[paste0("inp-", wid)]]
-##           rvs$dataSame <- identical(rvs$data, rvs$dbdata)
 ##         })
 ## 
 ##         observeEvent(input[[paste0("del-", wid)]], {
 ##           rvs$data <- rvs$data[-wid, , drop = FALSE]
-##           rvs$recordState <- rvs$recordState + 1
-##           rvs$dataSame <- identical(rvs$data, rvs$dbdata)
+##           uiTrigger$trigger()
 ##         })
 
 #' 
 #' We need to update `inited` if we created wiring for a new widget.
 #' 
-## ----server-13, eval = FALSE---------------------------------------------
+## ----server-11, eval = FALSE---------------------------------------------
 ## 	    inited <<- wid
 ##       }
 ## 
@@ -392,5 +386,5 @@ makeReactiveTrigger <- function() {
 #' 
 #' ### Try the app
 #' 
-## ----ref.label = paste0("server-", 1:13), echo = FALSE-------------------
+## ----ref.label = paste0("server-", 1:11), echo = FALSE-------------------
 

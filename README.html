@@ -169,6 +169,7 @@ we use it to control UI rebuilds for the records.
 
 ```r
   uiTrigger <- makeReactiveTrigger()
+  fileTrigger <- makeReactiveTrigger()
 ```
 
 
@@ -176,8 +177,15 @@ we use it to control UI rebuilds for the records.
 
 ```r
   dbdata <- reactive({
-    req(input$file)
-    read.csv(input$file, stringsAsFactors = FALSE)
+    cat("i reading input file\n")
+    fileTrigger$depend()
+    req(input$employee)
+    filename <- paste0(input$employee, ".csv")
+    read.csv(filename, stringsAsFactors = FALSE)
+  })
+
+  observeEvent(dbdata(), {
+    rvs$data <- dbdata()
     uiTrigger$trigger()
   })
 ```
@@ -224,17 +232,6 @@ For simplicity, we assume that each employee's data is stored in a CSV file
 that is named according to the employee. It is easy to change this to a
 proper database query.
 
-
-```r
-  observeEvent(input$employee, {
-    filename <- paste0(input$employee, ".csv")
-    d <- read.csv(filename, stringsAsFactors = FALSE)
-    rvs$data <- rvs$dbdata <- d
-    rvs$dataSame <- TRUE
-    rvs$recordState <- rvs$recordState + 1
-  })
-```
-
 Next event is adding a new role. We create a new id for it first, then just
 add it to the bottom of the data frame that holds the data. Then we trigger
 a UI rebuild. After adding a new role, it is highly unlikely that `data`
@@ -243,17 +240,14 @@ and `dbdata` would be the same, but we check for it, nevertheless.
 
 ```r
   observeEvent(input$add, {
+    cat("i adding a new record\n")
     newid <- if (nrow(rvs$data) == 0) {
-      1
+      1L
     } else {
-      max(as.numeric(rvs$data$id)) + 1
+      max(as.integer(rvs$data$id)) + 1L
     }
-    rvs$data <- rbind(
-      rvs$data,
-      list(id = newid, role = "")
-    )
-    rvs$recordState <- rvs$recordState + 1
-    rvs$dataSame <- identical(rvs$data, rvs$dbdata)
+    rvs$data <- rbind(rvs$data, list(id = newid, role = ""))
+    uiTrigger$trigger()
   })
 ```
 
@@ -268,9 +262,9 @@ simplest way to make sure that the UI shows the current data.
 
 ```r
   observeEvent(input$cancel, {
-    rvs$data <- rvs$dbdata
-    rvs$dataSame <- TRUE
-    rvs$recordState <- rvs$recordState + 1
+    cat("i cancelling edits\n")
+    rvs$data <- dbdata()
+    uiTrigger$trigger()
   })
 ```
 
@@ -280,10 +274,10 @@ to `data`. No UI rebuild is needed in this case.
 
 ```r
   observeEvent(input$save, {
+    cat("i saving to file\n")
     filename <- paste0(input$employee, ".csv")
     write.csv(rvs$data, filename, quote = FALSE, row.names = FALSE)
-    rvs$dbdata <- rvs$data
-    rvs$dataSame <- TRUE
+    fileTrigger$trigger()
   })
 ```
 
@@ -305,7 +299,8 @@ each role. Its first argument is the widget id, a number between `1` and
 
 ```r
   output$roles <- renderUI({
-    rvs$recordState
+    cat("i rebuild the UI\n")
+    uiTrigger$depend()
     mydata <- isolate(rvs$data)
     w <- lapply(seq_len(nrow(mydata)), function(i) {
       create_role(i, mydata[i, ])
@@ -366,13 +361,11 @@ in something new in the input field.
       if (wid > inited) {
         observeEvent(input[[paste0("inp-", wid)]], {
           rvs$data[wid, "role"] <- input[[paste0("inp-", wid)]]
-          rvs$dataSame <- identical(rvs$data, rvs$dbdata)
         })
 
         observeEvent(input[[paste0("del-", wid)]], {
           rvs$data <- rvs$data[-wid, , drop = FALSE]
-          rvs$recordState <- rvs$recordState + 1
-          rvs$dataSame <- identical(rvs$data, rvs$dbdata)
+          uiTrigger$trigger()
         })
 ```
 
