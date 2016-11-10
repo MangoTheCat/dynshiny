@@ -421,10 +421,10 @@ CSS selectors to use them. Modify the app to use `insertUI` and
 
 2. (Hard.) Write a reusable Shiny module that encapsulates the complexity
 of this problem. Maybe the module could have the following parameters:
-* function to read in the data,
-* function to save the data,
-* function to build the UI of a single record, from the data, and an
-  object id.
+    * function to read in the data,
+    * function to save the data,
+    * function to build the UI of a single record, from the data, and an
+      object id.
 
 ## Feedback
 
