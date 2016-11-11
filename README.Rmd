@@ -6,15 +6,15 @@ runtime: shiny
 
 ## Introduction
 
-It often happens that the user interface of a Shiny application needs to be
+It is not uncommon that the user interface of a Shiny application needs to be
 generated dynamically, based on data or program state. One typical use case
-that we encounter often is when the UI lets the user edit variable number
+that we encounter frequently is when the UI lets the user edit a variable number
 of records from a database.
 
 Imagine that you have an employee database, where each employee can be
-assigned multiple roles. Each assignment also has additional data, for
-example the proportion of work time the employee is expected to exercise
-that role, a comment field, etc. In a relational database, you would
+assigned multiple roles. Each role also has additional data, for
+example, the proportion of work time the employee is expected to perform
+that role or a comment field. In a relational database, you would
 store this information in a `roles` table, where each row corresponds to
 one of the role assignments of an employee. When writing a Shiny app to edit
 the database, it makes sense to edit all roles of an employee on the same
@@ -39,7 +39,7 @@ We want our app to satisfy the following requirements:
   data to the database.
 * It must be able to delete roles from an employee, and write the updated
   data to the database.
-* It must be able to handle arbitrary number of roles for an employee,
+* It must be able to handle an arbitrary number of roles for an employee,
   including no roles at all.
 * It must only modify the database once the user clicks on the `Save`
   button.
@@ -60,7 +60,7 @@ library(shiny)
 
 ### The UI part of the app
 
-The UI definition of the app it quite straightforward, as most of the
+The UI definition of the app is quite straightforward, as most of the
 content will be dynamically generated. We will have the employee selection
 box on a side panel, and the roles of the selected employee on the main
 panel.
@@ -91,16 +91,16 @@ simplicity we generate all three buttons dynamically.
 
 ### Structure of the app
 
-This app is different than others, because a significant part of it is
+This app is different to others, as a significant part of it is
 event-driven. Many (most?) Shiny apps are purely reactive, i.e. they only
 contain recipes for how the different output values can be updated, and 
 then it is up to Shiny to make sure that they are updated whenever they
 need to.
 
 We found it hard to write this app the traditional way, mainly because the
-UI contains many action buttons that trigger dynamic UI changes, and also
+UI contains multiple action buttons that trigger dynamic UI changes, and also
 because the internal representation of the data must be changed without any
-output change.
+output changes.
 
 The app will have the following main components:
 * We need to store the data that is on the user's screen, and update it,
@@ -137,7 +137,7 @@ two parts:
 1. `$depend()` can be used within reactive expressions to declare that
    the reactive expression must be updated whenever the trigger sets off.
 2. `$trigger()` sets off the trigger.   
-For the purpose of this post it is not very important how a reactive
+For the purpose of this post it is not very important to know how a reactive
 trigger works. It is sufficient to know that whenever it is `trigger()`-ed,
 all the `depend()`ent reactives are updated.
 
@@ -261,7 +261,7 @@ data.
   })
 ```
 
-The `Save` button is also simple. We write out the file, make sure that 
+The `Save` button is also simple. We write out the file and make sure that 
 the `dbdata()` reactive is updated, using `fileTrigger`. 
 This will also trigger an unneccesary UI rebuild in the end, but we
 can live with that.
@@ -402,7 +402,7 @@ values and triggers) attempts all failed. Then Joe helped me simplify
 it, introduced the reactive trigger expression and gave me important
 insight about imperative and reactive apps.
 
-While we expressed much the app imperatively, it is important to understand
+While we expressed much of the app imperatively, it is important to understand
 that there isn't an either/or relationship between imperative and reactive.
 What we want to do is identify which pieces of state need to be treated
 imperatively, and which can still be handled reactively.
