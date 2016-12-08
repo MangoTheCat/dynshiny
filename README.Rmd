@@ -156,7 +156,7 @@ simple numeric id of the employee. For now we set `data` to `NULL`. It
 will be automatically updated to the first (=default) employee's data 
 when the app loads.
 
-```{r server-1, eval = FALSE}
+```{r server-1, eval = FALSE, purl = TRUE}
 server <- function(input, output, session) {
   rvs <- reactiveValues(data = NULL)
 ```
@@ -165,7 +165,7 @@ We'll use `uiTrigger` to trigger a UI rebuild. This trigger is the heart of the 
 We use it to control UI rebuilds for the records. `fileTrigger` is used to 
 trigger an update of `dbdata()`, i.e. to (re)read the data from the database.
 
-```{r server-2, eval = FALSE}
+```{r server-2, eval = FALSE, purl = TRUE}
   uiTrigger <- makeReactiveTrigger()
   fileTrigger <- makeReactiveTrigger()
 ```
@@ -178,7 +178,7 @@ For simplicity, we assume that each employee's data is stored in a CSV file
 that is named according to the employee. It is easy to change this to a
 proper database query.
 
-```{r server-3, eval = FALSE}
+```{r server-3, eval = FALSE, purl = TRUE}
   dbdata <- reactive({
     cat("i reading input file\n")
     fileTrigger$depend()
@@ -192,7 +192,7 @@ If new data is read from the database, then we also need to trigger a UI rebuild
 For this we simply put an event handler on the `dbdata()` reactive. This runs 
 every time the reactive is updated.
 
-```{r server-4, eval = FALSE}
+```{r server-4, eval = FALSE, purl = TRUE}
   observeEvent(dbdata(), {
     rvs$data <- dbdata()
     uiTrigger$trigger()
@@ -204,7 +204,7 @@ every time the reactive is updated.
 The `Add` button is always shown. The `Cancel` and `Save` buttons are only
 shown if `data` and `dbdata` are not the same.
 
-```{r server-5, eval = FALSE}
+```{r server-5, eval = FALSE, purl = TRUE}
   dataSame <- reactive({
     identical(rvs$data, dbdata())
   })
@@ -235,7 +235,7 @@ The first event we need to handle is adding a new role. We create a new id
 for it first, then just add it to the bottom of the data frame that holds
 the data. Then we trigger a UI rebuild.
 
-```{r server-6, eval = FALSE}
+```{r server-6, eval = FALSE, purl = TRUE}
   observeEvent(input$add, {
     cat("i adding a new record\n")
     newid <- if (nrow(rvs$data) == 0) {
@@ -253,7 +253,7 @@ When the `Cancel` button is hit, we need to restore the data from
 but it is the simplest way to make sure that the UI shows the current
 data.
 
-```{r server-7, eval = FALSE}
+```{r server-7, eval = FALSE, purl = TRUE}
   observeEvent(input$cancel, {
     cat("i cancelling edits\n")
     rvs$data <- dbdata()
@@ -266,7 +266,7 @@ the `dbdata()` reactive is updated, using `fileTrigger`.
 This will also trigger an unneccesary UI rebuild in the end, but we
 can live with that.
 
-```{r server-8, eval = FALSE}
+```{r server-8, eval = FALSE, purl = TRUE}
   observeEvent(input$save, {
     cat("i saving to file\n")
     filename <- paste0(input$employee, ".csv")
@@ -290,7 +290,7 @@ We use `create_role` to create the UI and (possibly) the event wiring for
 each role. Its first argument is the widget id, a number between `1` and
 `n`, where `n` is the number of roles on the screen.
 
-```{r server-9, eval = FALSE}
+```{r server-9, eval = FALSE, purl = TRUE}
   output$roles <- renderUI({
     cat("i rebuild the UI\n")
     uiTrigger$depend()
@@ -315,7 +315,7 @@ even if we rebuild the UI, and remove some elements, the previously created
 triggers will be still in effect, and recreating them will trigger duplicate
 events.
 
-```{r server-10, eval = FALSE}
+```{r server-10, eval = FALSE, purl = TRUE}
   create_role <- (function() {
 
     inited <- 0
@@ -348,7 +348,7 @@ Note that editing the text input field does not trigger a UI rebuild, and
 this is intentional. We don't want rebuilds just because the user has typed
 in something new in the input field.
 
-```{r server-11, eval = FALSE}
+```{r server-11, eval = FALSE, purl = TRUE}
       if (wid > inited) {
         observeEvent(input[[paste0("inp-", wid)]], {
           rvs$data[wid, "role"] <- input[[paste0("inp-", wid)]]
@@ -362,7 +362,7 @@ in something new in the input field.
 
 We need to update `inited` if we created wiring for a new widget.
 
-```{r server-12, eval = FALSE}
+```{r server-12, eval = FALSE, purl = TRUE}
 	    inited <<- wid
       }
 
@@ -390,7 +390,7 @@ refers to its own `wid` value.
 
 We are now ready to start the app.
 
-```{r server-13, eval = FALSE}
+```{r server-13, eval = FALSE, purl = TRUE}
 shinyApp(ui, server, options = list(height = 1600))
 ```
 
@@ -436,5 +436,7 @@ in the https://github.com/MangoTheCat/dynshiny repository. Thank you!
 
 ### Try the app
 
-```{r ref.label = paste0("server-", 1:13), echo = FALSE}
+TODO: add reference to deployed app
+
+```{r ref.label = paste0("server-", 1:13), purl = FALSE, echo = FALSE}
 ```

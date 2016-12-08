@@ -59,10 +59,6 @@ implements them.
 library(shiny)
 ```
 
-```
-## Warning: package 'shiny' was built under R version 3.3.0
-```
-
 ### The UI part of the app
 
 The UI definition of the app is quite straightforward, as most of the
@@ -455,6 +451,8 @@ solutions to this problem. Should you have one, please open an issue
 in the https://github.com/MangoTheCat/dynshiny repository. Thank you!
 
 ### Try the app
+
+TODO: add reference to deployed app
 
 
 ```
