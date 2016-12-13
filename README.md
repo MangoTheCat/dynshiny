@@ -1,8 +1,6 @@
----
-title: Dynamically generated Shiny UI
-author: "Gábor Csárdi — Mango Solutions  \n Joe Cheng — RStudio"
-runtime: shiny
----
+# Dynamically generated Shiny UI
+Gábor Csárdi — Mango Solutions  
+ Joe Cheng — RStudio  
 
 ## Introduction
 
@@ -107,7 +105,7 @@ output changes.
 The app will have the following main components:
 * We need to store the data that is on the user's screen, and update it,
   as it changes. This will be in the `data` reactive value.
-* We need to store the data as in the database, to be able to compare
+* We need to store the data in a database, to be able to compare
   it to the data under editing and show/hide the 'Save' and 'Cancel' buttons. 
   We'll use the `dbdata()` reactive for this.
 * We will use a `renderUI()` call to create the 'Add', 'Cancel' and 'Save'
@@ -119,7 +117,7 @@ The app will have the following main components:
 
 ### Triggering UI changes
 
-To trigger UI changes as needed, we introduce a reactive trigger constuct:
+To trigger UI changes as needed, we introduce a reactive trigger construct:
 
 ```r
 makeReactiveTrigger <- function() {
@@ -149,8 +147,8 @@ all the `depend()`ent reactives are updated.
 We are ready to write the more complicated `server` function.
 
 We will use the `data` reactive value to store the current values of the
-roles. `data` is updated whenever the input widgets change. (See later, 
-when we create these widgets, in `createRecord()`.) 
+roles. `data` is updated whenever the input widgets change (see later, 
+when we create these widgets in `createRecord()`). 
 
 We assume that `data` is a data frame and each role corresponds to a row
 in it. For this simple app `data` has columns `id` and `role` only. Other
@@ -165,9 +163,8 @@ server <- function(input, output, session) {
   rvs <- reactiveValues(data = NULL)
 ```
 
-We'll use `uiTrigger` to trigger a UI rebuild. This trigger is the heart of the app.
-We use it to control UI rebuilds for the records. `fileTrigger` is used to 
-trigger an update of `dbdata()`, i.e. to (re)read the data from the database.
+We'll use `uiTrigger` to trigger a UI rebuild for the records, this trigger is the heart of the app.
+`fileTrigger` is used to trigger an update of `dbdata()`, i.e. to (re)read the data from the database.
 
 
 ```r
@@ -175,8 +172,8 @@ trigger an update of `dbdata()`, i.e. to (re)read the data from the database.
   fileTrigger <- makeReactiveTrigger()
 ```
 
-`dbdata()` provides the last version of the employee records, as in the database.
-It is updated whenever a new employee is selected (`input$employee`), and an update
+`dbdata()` provides the last version of the employee records as they are in the database.
+It is updated whenever a new employee is selected (`input$employee`) and an update
 can also be triggered via `fileTrigger`.
 
 For simplicity, we assume that each employee's data is stored in a CSV file
@@ -236,11 +233,11 @@ shown if `data` and `dbdata` are not the same.
 ### Add reactivity
 
 So again, parts of this app are event-driven. We specify what should
-happen whenever the user presses the various action buttons, or edits
+happen whenever the user presses the various action buttons or edits
 the roles.
 
 The first event we need to handle is adding a new role. We create a new id 
-for it first, then just add it to the bottom of the data frame that holds
+for it first and then just add it to the bottom of the data frame that holds
 the data. Then we trigger a UI rebuild.
 
 
@@ -258,7 +255,7 @@ the data. Then we trigger a UI rebuild.
 ```
 
 When the `Cancel` button is hit, we need to restore the data from
-`dbdata()`. Then we trigger a UI rebuild. This is not always needed,
+`dbdata()`. Then we trigger a UI rebuild. This is not always needed
 but it is the simplest way to make sure that the UI shows the current
 data.
 
@@ -272,8 +269,8 @@ data.
 ```
 
 The `Save` button is also simple. We write out the file and make sure that 
-the `dbdata()` reactive is updated, using `fileTrigger`. 
-This will also trigger an unneccesary UI rebuild in the end, but we
+the `dbdata()` reactive is updated using `fileTrigger`. 
+This will also trigger an unnecessary UI rebuild in the end but we
 can live with that.
 
 
@@ -316,15 +313,15 @@ each role. Its first argument is the widget id, a number between `1` and
 
 ### Creating the UI for a role
 
-This is another key part of the app, and it is also the part that is easy to
+This is another key part of the app and it is also the part that is easy to
 write incorrectly. `create_role` is a closure, a function that creates both
 a function and an environment to store data.
 
 We need the environment to store the maximum number of widgets that were
 wired up with edit and delete events. We need this because in Shiny it is
 not (easily) possible to remove bindings (i.e. `observeEvent` triggers). So
-even if we rebuild the UI, and remove some elements, the previously created
-triggers will be still in effect, and recreating them will trigger duplicate
+even if we rebuild the UI and remove some elements, the previously created
+triggers will still be in effect, and recreating them will trigger duplicate
 events.
 
 
@@ -348,16 +345,15 @@ events.
       ))
 ```
 
-So every time we build a widget with a given id (`wid`) number, we check if
-the widget's events were already wired up, and only create new `observeEvent`
-triggers if they were not.
+So every time we build a widget with a given id (`wid`) number we only create new `observeEvent`
+triggers if the widget's events weren't already wired up.
 
 In other words, the newly built UI will reuse as many of the existing wired
 widgets as possible. `inited` stores the number of `wired` widgets and the
-ids of their inputs and delete buttons are `inp-x` and `del-x`, where `x`
+id's of their inputs and delete buttons are `inp-x` and `del-x`, where `x`
 is a number between 1 and `inited`.
 
-Note that editing the text input field does not trigger a UI rebuild, and
+Note that editing the text input field does not trigger a UI rebuild and
 this is intentional. We don't want rebuilds just because the user has typed
 in something new in the input field.
 
@@ -390,16 +386,16 @@ We need to update `inited` if we created wiring for a new widget.
 Note that here we create a function and call it immediately. 
 The function itself creates and returns a function, which we
 assign to `create_role`. The effect of this is that every time
-we run `create_role`, it has access to the same `inited` variable,
+we run `create_role`, it has access to the same `inited` variable
 and updates it as needed. `inited` is in the parent environment of
 `create_role`.
 
 Another non-obvious observation is that (by default) `observeEvent`
 evaluates the expression in the environment of its caller, which is the
 execution environment of the running`create_role` function.
-Execution environments are usually temporary, but in this case
+Execution environments are usually temporary but in this case
 the `observeEvent` expression keeps a reference to it, so it is kept
-alive. This environment stores the value of `wid`, at the time
+alive. This environment stores the value of `wid` at the time
 the event handler was created. This way, every event handler expression
 refers to its own `wid` value.
 
@@ -412,7 +408,7 @@ shinyApp(ui, server, options = list(height = 1600))
 
 ## Summary
 
-It took me (Gábor) a couple of attempts to write he first version of this
+It took me (Gábor) a couple of attempts to write the first version of this
 small Shiny app. My initial, purely reactive (i.e. without reactive 
 values and triggers) attempts all failed. Then Joe helped me simplify 
 it, introduced the reactive trigger expression and gave me important
@@ -423,8 +419,8 @@ that there isn't an either/or relationship between imperative and reactive.
 What we want to do is identify which pieces of state need to be treated
 imperatively, and which can still be handled reactively.
 
-The question you have to answer is, "Can this state be derived/computed 
-from other state already represented in the system?" If so, it's a strong 
+The question you have to answer is: "Can this state be derived/computed 
+from another state already represented in the system?" If so, it's a strong 
 candidate for being made into a reactive expression instead.
 
 ## Exercises
@@ -444,17 +440,10 @@ of this problem. Maybe the module could have the following parameters:
 
 ## Feedback
 
-Please leave your comments below.
-
 We would be very excited to hear about improvements or alternative
 solutions to this problem. Should you have one, please open an issue
 in the https://github.com/MangoTheCat/dynshiny repository. Thank you!
 
 ### Try the app
 
-TODO: add reference to deployed app
-
-
-```
-## Error in appshot.shiny.appobj(structure(list(httpHandler = function (req) : appshot of Shiny app objects is not yet supported.
-```
+To try the app, go to https://mangothecat.shinyapps.io/dynshiny/.
