@@ -1,9 +1,7 @@
 ---
 title: Dynamically generated Shiny UI
 author: "Gábor Csárdi — Mango Solutions  \n Joe Cheng — RStudio"
-output: 
-  html_document: 
-    keep_md: yes
+runtime: shiny
 ---
 
 ## Introduction
