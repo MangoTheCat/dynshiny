@@ -435,6 +435,3 @@ in the https://github.com/MangoTheCat/dynshiny repository. Thank you!
 ### Try the app
 
 To try the app, go to https://mangothecat.shinyapps.io/dynshiny/.
-
-```{r ref.label = paste0("server-", 1:13), purl = FALSE, echo = FALSE}
-```

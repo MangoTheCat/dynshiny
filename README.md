@@ -447,5 +447,3 @@ in the https://github.com/MangoTheCat/dynshiny repository. Thank you!
 ### Try the app
 
 To try the app, go to https://mangothecat.shinyapps.io/dynshiny/.
-
-<!--html_preserve--><div style="width: 100% ; height: 1600px ; text-align: center; box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box;" class="muted well">Shiny applications not supported in static R Markdown documents</div><!--/html_preserve-->
