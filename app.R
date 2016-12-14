@@ -4,6 +4,14 @@
 #' runtime: shiny
 #' ---
 #' 
+## ----echo = FALSE, results = "hide"--------------------------------------
+## Work in a temporary folder, so that we do not mess up the
+## original "DB" files
+dir.create(mydir <- tempfile())
+file.copy(list.files(pattern = "*.csv"), mydir)
+setwd(mydir)
+
+#' 
 #' ## Introduction
 #' 
 #' It is not uncommon that the user interface of a Shiny application needs to be

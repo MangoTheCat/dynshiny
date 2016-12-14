@@ -1,6 +1,10 @@
-# Dynamically generated Shiny UI
-Gábor Csárdi — Mango Solutions  
- Joe Cheng — RStudio  
+---
+title: Dynamically generated Shiny UI
+author: "Gábor Csárdi — Mango Solutions  \n Joe Cheng — RStudio"
+runtime: shiny
+---
+
+
 
 ## Introduction
 
