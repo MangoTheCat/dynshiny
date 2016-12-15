@@ -159,6 +159,14 @@ makeReactiveTrigger <- function() {
 ## ----server-1, eval = FALSE, purl = TRUE---------------------------------
 server <- function(input, output, session) {
   rvs <- reactiveValues(data = NULL)
+  db_dir <- "."
+
+#' 
+## ----echo = FALSE, results = "hide"--------------------------------------
+  ## We work in a temporary directory for the public deployment
+  db_dir <- tempfile()
+  dir.create(db_dir)
+  file.copy(list.files(pattern = "*.csv"), db_dir)
 
 #' 
 #' We'll use `uiTrigger` to trigger a UI rebuild for the records, this trigger is the heart of the app.
@@ -182,7 +190,7 @@ server <- function(input, output, session) {
     cat("i reading input file\n")
     fileTrigger$depend()
     req(input$employee)
-    filename <- paste0(input$employee, ".csv")
+    filename <- file.path(db_dir, paste0(input$employee, ".csv"))
     read.csv(filename, stringsAsFactors = FALSE)
   })
 
@@ -268,7 +276,7 @@ server <- function(input, output, session) {
 ## ----server-8, eval = FALSE, purl = TRUE---------------------------------
   observeEvent(input$save, {
     cat("i saving to file\n")
-    filename <- paste0(input$employee, ".csv")
+    filename <- file.path(db_dir, paste0(input$employee, ".csv"))
     write.csv(rvs$data, filename, quote = FALSE, row.names = FALSE)
     fileTrigger$trigger()
   })

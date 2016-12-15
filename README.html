@@ -163,7 +163,10 @@ when the app loads.
 ```r
 server <- function(input, output, session) {
   rvs <- reactiveValues(data = NULL)
+  db_dir <- "."
 ```
+
+
 
 We'll use `uiTrigger` to trigger a UI rebuild for the records, this trigger is the heart of the app.
 `fileTrigger` is used to trigger an update of `dbdata()`, i.e. to (re)read the data from the database.
@@ -188,7 +191,7 @@ proper database query.
     cat("i reading input file\n")
     fileTrigger$depend()
     req(input$employee)
-    filename <- paste0(input$employee, ".csv")
+    filename <- file.path(db_dir, paste0(input$employee, ".csv"))
     read.csv(filename, stringsAsFactors = FALSE)
   })
 ```
@@ -279,7 +282,7 @@ can live with that.
 ```r
   observeEvent(input$save, {
     cat("i saving to file\n")
-    filename <- paste0(input$employee, ".csv")
+    filename <- file.path(db_dir, paste0(input$employee, ".csv"))
     write.csv(rvs$data, filename, quote = FALSE, row.names = FALSE)
     fileTrigger$trigger()
   })
