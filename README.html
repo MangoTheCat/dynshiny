@@ -4,8 +4,6 @@ author: "Gábor Csárdi — Mango Solutions  \n Joe Cheng — RStudio"
 runtime: shiny
 ---
 
-
-
 ## Introduction
 
 It is not uncommon that the user interface of a Shiny application needs to be
